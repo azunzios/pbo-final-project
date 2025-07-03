@@ -1,0 +1,51 @@
+# ================================
+# Maven
+# ================================
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Maven local repository (if you use custom location)
+.mvn/
+
+# ================================
+# Java
+# ================================
+*.class
+*.log
+*.ctxt
+*.jar
+*.war
+*.ear
+hs_err_pid*.log
+replay_pid*.log
+
+# ================================
+# VS Code
+# ================================
+.vscode/
+.history/
+
+# ================================
+# OS/Editor Temp Files
+# ================================
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ================================
+# IntelliJ IDEA (jaga-jaga kalau pindah IDE)
+# ================================
+.idea/
+*.iml
+*.iws
+out/
+
+# ================================
+# NetBeans (jaga-jaga)
+# ================================
+nbproject/private/
+build/
+nbbuild/
+dist/
