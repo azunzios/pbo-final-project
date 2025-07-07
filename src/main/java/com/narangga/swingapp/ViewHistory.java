@@ -1,9 +1,17 @@
 package com.narangga.swingapp;
 
-import javax.swing.*;
-import java.awt.*;
-import java.sql.SQLException;
-import java.util.List;
+import java.awt.BorderLayout;
+import java.awt.Component;
+
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.DefaultListModel;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
 public class ViewHistory extends JFrame {
     private JList<CareLog> logList;

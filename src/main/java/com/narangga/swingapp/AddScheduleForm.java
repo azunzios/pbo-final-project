@@ -1,117 +1,290 @@
 package com.narangga.swingapp;
 
-import javax.swing.*;
-import java.awt.*;
-import java.sql.SQLException;
-import java.sql.Time;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.FlowLayout;
+import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
-public class AddScheduleForm extends JFrame {
-    private JComboBox<Pet> petComboBox;
-    private JComboBox<String> careTypeComboBox;
-    private JTextField timeField;
-    private JTextField daysField;
-    private MainMenu mainMenu;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SpinnerDateModel;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 
-    public AddScheduleForm(MainMenu mainMenu) {
-        this.mainMenu = mainMenu;
+import com.narangga.swingapp.dao.PetDAO;
+import com.toedter.calendar.JDateChooser;
+
+public class AddScheduleForm extends JDialog {
+    private final SchedulePanel parent;
+    private JComboBox<String> recurrenceBox;
+    private JPanel datePanel;
+    private JSpinner timeSpinner;
+    private JComboBox<Pet> petComboBox;
+    private JTextField careTypeField;
+    private JTextArea notesArea;
+    private List<JCheckBox> weekdayCheckboxes;
+    private JSpinner monthDaySpinner;
+    private JSpinner dateSpinner; // Use JSpinner for date selection
+    private JDateChooser dateChooser;
+    private JComboBox<String> categoryBox;
+    private Schedule scheduleToEdit;
+
+    public AddScheduleForm(SchedulePanel parent) {
+        this(parent, null);
+    }
+
+    public AddScheduleForm(SchedulePanel parent, Schedule scheduleToEdit) {
+        super(
+            parent != null && SwingUtilities.getWindowAncestor(parent) != null
+                ? (Frame) SwingUtilities.getWindowAncestor(parent)
+                : null, // Pastikan parent tidak null dan memiliki Window ancestor
+            scheduleToEdit == null ? "Tambah Jadwal Baru" : "Edit Jadwal",
+            true
+        );
+        this.parent = parent;
+        this.scheduleToEdit = scheduleToEdit;
         initializeUI();
+        if (scheduleToEdit != null) {
+            loadScheduleData();
+        }
     }
 
     private void initializeUI() {
-        setTitle("Add New Schedule");
-        setSize(400, 300);
-        setLocationRelativeTo(mainMenu);
+        // Ganti layout utama menjadi GridBagLayout agar field tidak bertumpuk
         setLayout(new BorderLayout(10, 10));
 
-        JPanel formPanel = new JPanel(new GridLayout(0, 2, 10, 10));
-        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel mainPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.NORTHWEST; // Mulai dari atas
 
-        // Form fields
-        formPanel.add(new JLabel("Pet:"));
+        int row = 0;
+
+        // Pet selection
+        gbc.gridx = 0; gbc.gridy = row;
+        mainPanel.add(new JLabel("Peliharaan:"), gbc);
+        gbc.gridx = 1;
         petComboBox = new JComboBox<>();
-        loadPetsIntoComboBox(); // Memuat hewan dari database
+        loadPets();
+        mainPanel.add(petComboBox, gbc);
 
-        // Custom renderer untuk menampilkan nama hewan saja
-        petComboBox.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                if (value instanceof Pet) {
-                    value = ((Pet) value).getName() + " (" + ((Pet) value).getType() + ")";
-                }
-                return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            }
-        });
-        formPanel.add(petComboBox);
+        // Care type
+        gbc.gridx = 0; gbc.gridy = ++row;
+        mainPanel.add(new JLabel("Jenis Perawatan:"), gbc);
+        gbc.gridx = 1;
+        careTypeField = new JTextField(20);
+        mainPanel.add(careTypeField, gbc);
 
-        formPanel.add(new JLabel("Care Type:"));
-        careTypeComboBox = new JComboBox<>(new String[]{"Feeding", "Grooming", "Walking", "Vet Visit", "Play Time"});
-        formPanel.add(careTypeComboBox);
+        // Recurrence selection
+        gbc.gridx = 0; gbc.gridy = ++row;
+        mainPanel.add(new JLabel("Pengulangan:"), gbc);
+        gbc.gridx = 1;
+        recurrenceBox = new JComboBox<>(new String[] { "Once", "Daily", "Weekly", "Monthly" });
+        recurrenceBox.addActionListener(e -> updateDatePanel());
+        mainPanel.add(recurrenceBox, gbc);
 
-        formPanel.add(new JLabel("Time (HH:MM:SS):"));
-        timeField = new JTextField("08:00:00");
-        formPanel.add(timeField);
+        // Dynamic date/time panel
+        gbc.gridx = 0; gbc.gridy = ++row;
+        gbc.gridwidth = 2;
+        datePanel = new JPanel(new CardLayout());
+        mainPanel.add(datePanel, gbc);
+        gbc.gridwidth = 1;
 
-        formPanel.add(new JLabel("Days (e.g. Mon,Wed,Fri):"));
-        daysField = new JTextField("Mon,Tue,Wed,Thu,Fri,Sat,Sun");
-        formPanel.add(daysField);
+        // Time selection (common for all types)
+        gbc.gridx = 0; gbc.gridy = ++row;
+        mainPanel.add(new JLabel("Waktu:"), gbc);
+        gbc.gridx = 1;
+        SpinnerDateModel timeModel = new SpinnerDateModel();
+        timeSpinner = new JSpinner(timeModel);
+        JSpinner.DateEditor timeEditor = new JSpinner.DateEditor(timeSpinner, "HH:mm");
+        timeSpinner.setEditor(timeEditor);
+        mainPanel.add(timeSpinner, gbc);
 
-        add(formPanel, BorderLayout.CENTER);
+        // Category selection
+        gbc.gridx = 0; gbc.gridy = ++row;
+        mainPanel.add(new JLabel("Kategori:"), gbc);
+        gbc.gridx = 1;
+        categoryBox = new JComboBox<>(new String[] { "General", "Feeding", "Medicine", "Grooming", "Exercise" });
+        mainPanel.add(categoryBox, gbc);
+
+        // Notes
+        gbc.gridx = 0; gbc.gridy = ++row;
+        mainPanel.add(new JLabel("Catatan:"), gbc);
+        gbc.gridx = 1;
+        notesArea = new JTextArea(3, 20);
+        mainPanel.add(new JScrollPane(notesArea), gbc);
 
         // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton saveButton = new JButton("Save");
+        JButton saveButton = new JButton("Simpan");
+        JButton cancelButton = new JButton("Batal");
         saveButton.addActionListener(e -> saveSchedule());
-        JButton cancelButton = new JButton("Cancel");
         cancelButton.addActionListener(e -> dispose());
-
         buttonPanel.add(saveButton);
         buttonPanel.add(cancelButton);
+
+        add(mainPanel, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
+
+        initializeDatePanels();
+        pack();
+        setLocationRelativeTo(parent);
     }
 
-    private void loadPetsIntoComboBox() {
+    private void loadPets() {
+        PetDAO petDAO = new PetDAO();
         try {
-            PetDAO petDAO = new PetDAO();
-            List<Pet> pets = petDAO.getAllPets();
+            List<Pet> pets = petDAO.getAllPets(); // Ensure petDAO is connected to the database
             for (Pet pet : pets) {
                 petComboBox.addItem(pet);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Failed to load pets: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "Error loading pets: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void initializeDatePanels() {
+        // Once panel with date picker (using JSpinner)
+        JPanel oncePanel = new JPanel();
+        dateSpinner = new JSpinner(new SpinnerDateModel());
+        dateSpinner.setEditor(new JSpinner.DateEditor(dateSpinner, "yyyy-MM-dd"));
+        oncePanel.add(dateSpinner);
+        datePanel.add(oncePanel, "Once");
+
+        // Weekly panel with day checkboxes
+        JPanel weeklyPanel = new JPanel();
+        weekdayCheckboxes = new ArrayList<>();
+        String[] days = { "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu" };
+        for (String day : days) {
+            JCheckBox cb = new JCheckBox(day);
+            weekdayCheckboxes.add(cb);
+            weeklyPanel.add(cb);
+        }
+        datePanel.add(weeklyPanel, "Weekly");
+
+        // Monthly panel with day spinner
+        JPanel monthlyPanel = new JPanel();
+        monthDaySpinner = new JSpinner(new SpinnerNumberModel(1, 1, 31, 1));
+        monthlyPanel.add(new JLabel("Tanggal:"));
+        monthlyPanel.add(monthDaySpinner);
+        datePanel.add(monthlyPanel, "Monthly");
+
+        // Empty panel for daily (only needs time)
+        datePanel.add(new JPanel(), "Daily");
+    }
+
+    private void updateDatePanel() {
+        CardLayout cl = (CardLayout) datePanel.getLayout();
+        cl.show(datePanel, (String) recurrenceBox.getSelectedItem());
     }
 
     private void saveSchedule() {
         try {
             Pet selectedPet = (Pet) petComboBox.getSelectedItem();
             if (selectedPet == null) {
-                JOptionPane.showMessageDialog(this, "Please select a pet.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Please select a pet.", "Validation Error",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            String careType = (String) careTypeComboBox.getSelectedItem();
-            Time time = Time.valueOf(timeField.getText().trim());
-            String days = daysField.getText().trim();
+            String careType = careTypeField.getText().trim();
+            String notes = notesArea.getText().trim();
+            String recurrence = (String) recurrenceBox.getSelectedItem();
+            Date scheduleTime = (Date) timeSpinner.getValue();
 
-            if (days.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Days field cannot be empty.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                return;
+            if ("Once".equals(recurrence)) {
+                Date selectedDate = (Date) dateSpinner.getValue();
+                selectedDate.setHours(scheduleTime.getHours());
+                selectedDate.setMinutes(scheduleTime.getMinutes());
+                selectedDate.setSeconds(0);
+                scheduleTime = selectedDate;
             }
 
-            Schedule schedule = new Schedule(selectedPet.getId(), careType, time, days);
+            Schedule schedule = new Schedule(
+                    selectedPet.getId(),
+                    careType,
+                    scheduleTime,
+                    getSelectedDays(),
+                    recurrence,
+                    (String) categoryBox.getSelectedItem(),
+                    notes);
 
-            new ScheduleDAO().addSchedule(schedule);
+            ScheduleDAO scheduleDAO = new ScheduleDAO();
+            scheduleDAO.addSchedule(schedule); // Ensure scheduleDAO is connected to the database
+
             JOptionPane.showMessageDialog(this, "Schedule saved successfully!");
-            mainMenu.loadSchedules(); // Refresh the schedule list in MainMenu
+            parent.loadSchedules();
+            if (parent != null && parent.getMainMenu() != null) {
+                parent.getMainMenu().refreshData();
+            }
             dispose();
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Invalid time format. Please use HH:MM:SS.", "Error", JOptionPane.ERROR_MESSAGE);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Database Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "Error: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private String getSelectedDays() {
+        StringBuilder sb = new StringBuilder();
+        if (weekdayCheckboxes != null) {
+            for (JCheckBox cb : weekdayCheckboxes) {
+                if (cb.isSelected()) {
+                    if (sb.length() > 0)
+                        sb.append(",");
+                    sb.append(cb.getText());
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    private void loadScheduleData() {
+        if (scheduleToEdit != null) {
+            for (int i = 0; i < petComboBox.getItemCount(); i++) {
+                Pet pet = (Pet) petComboBox.getItemAt(i);
+                if (pet.getId() == scheduleToEdit.getPetId()) {
+                    petComboBox.setSelectedIndex(i);
+                    break;
+                }
+            }
+            careTypeField.setText(scheduleToEdit.getCareType());
+            timeSpinner.setValue(scheduleToEdit.getScheduleTime());
+            recurrenceBox.setSelectedItem(scheduleToEdit.getRecurrence());
+            categoryBox.setSelectedItem(scheduleToEdit.getCategory());
+            notesArea.setText(scheduleToEdit.getNotes());
+
+            // Load specific recurrence data
+            if ("Weekly".equals(scheduleToEdit.getRecurrence())) {
+                String[] selectedDays = scheduleToEdit.getDays().split(",");
+                for (String day : selectedDays) {
+                    for (JCheckBox cb : weekdayCheckboxes) {
+                        if (cb.getText().equals(day.trim())) {
+                            cb.setSelected(true);
+                        }
+                    }
+                }
+            }
         }
     }
 }

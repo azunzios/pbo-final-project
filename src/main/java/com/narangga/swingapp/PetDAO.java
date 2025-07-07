@@ -1,8 +1,15 @@
 package com.narangga.swingapp;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.swing.JOptionPane;
+
+import com.narangga.swingapp.settings.UserSettings;
 
 /**
  * Data Access Object for Pet entities
@@ -16,7 +23,7 @@ public class PetDAO {
      * @return true if successful, false otherwise
      */
     public boolean addPet(Pet pet) {
-        String sql = "INSERT INTO pets (name, type, birth_date, weight, gender, notes, image_path) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO pets (name, type, birth_date, weight, length, gender, notes, image_path, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -32,9 +39,11 @@ public class PetDAO {
             }
             
             stmt.setDouble(4, pet.getWeight());
-            stmt.setString(5, pet.getGender());
-            stmt.setString(6, pet.getNotes());
-            stmt.setString(7, pet.getImagePath());
+            stmt.setDouble(5, pet.getLength());
+            stmt.setString(6, pet.getGender());
+            stmt.setString(7, pet.getNotes());
+            stmt.setString(8, pet.getImagePath());
+            stmt.setInt(9, UserSettings.getCurrentSettings().getUserId()); // <-- Tambahkan ini
 
             int affectedRows = stmt.executeUpdate();
             
@@ -87,19 +96,18 @@ public class PetDAO {
      */
     public List<Pet> getAllPets() {
         List<Pet> pets = new ArrayList<>();
-        String sql = "SELECT * FROM pets ORDER BY name";
-        
+        String sql = "SELECT * FROM pets WHERE user_id = ? ORDER BY name";
         try (Connection conn = DatabaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            
-            while (rs.next()) {
-                pets.add(extractPetFromResultSet(rs));
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, UserSettings.getCurrentSettings().getUserId());
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    pets.add(extractPetFromResultSet(rs));
+                }
             }
         } catch (SQLException e) {
             handleException("Error retrieving pets", e);
         }
-        
         return pets;
     }
     
@@ -109,7 +117,7 @@ public class PetDAO {
      * @return true if successful, false otherwise
      */
     public boolean updatePet(Pet pet) {
-        String sql = "UPDATE pets SET name = ?, type = ?, birth_date = ?, weight = ?, gender = ?, notes = ?, image_path = ? WHERE id = ?";
+        String sql = "UPDATE pets SET name = ?, type = ?, birth_date = ?, weight = ?, length = ? ,gender = ?, notes = ?, image_path = ? WHERE id = ?";
         
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -125,10 +133,11 @@ public class PetDAO {
             }
             
             stmt.setDouble(4, pet.getWeight());
-            stmt.setString(5, pet.getGender());
-            stmt.setString(6, pet.getNotes());
-            stmt.setString(7, pet.getImagePath());
-            stmt.setInt(8, pet.getId());
+            stmt.setDouble(5, pet.getLength());
+            stmt.setString(6, pet.getGender());
+            stmt.setString(7, pet.getNotes());
+            stmt.setString(8, pet.getImagePath());
+            stmt.setInt(9, pet.getId());
             
             int affectedRows = stmt.executeUpdate();
             return affectedRows > 0;

@@ -8,6 +8,7 @@ public class Pet {
     private String type;
     private Date birthDate;
     private double weight;
+    private double length;
     private String notes;
     private String gender;
     private String imagePath;
@@ -35,60 +36,68 @@ public class Pet {
     }
 
     // Getters and setters
-    public int getId() { 
-        return id; 
-    }
-    
-    public void setId(int id) { 
-        this.id = id; 
-    }
-    
-    public String getName() { 
-        return name != null ? name : ""; 
-    }
-    
-    public void setName(String name) { 
-        this.name = name; 
-    }
-    
-    public String getType() { 
-        return type != null ? type : ""; 
-    }
-    
-    public void setType(String type) { 
-        this.type = type; 
-    }
-    
-    public Date getBirthDate() { 
-        return birthDate != null ? new Date(birthDate.getTime()) : null; 
-    }
-    
-    public void setBirthDate(Date birthDate) { 
-        this.birthDate = birthDate != null ? new Date(birthDate.getTime()) : null; 
+    public int getId() {
+        return id;
     }
 
-    public double getWeight() { 
-        return weight; 
+    public void setId(int id) {
+        this.id = id;
     }
-    
-    public void setWeight(double weight) { 
-        this.weight = weight; 
+
+    public String getName() {
+        return name != null ? name : "";
     }
-    
-    public String getNotes() { 
-        return notes != null ? notes : ""; 
+
+    public void setName(String name) {
+        this.name = name;
     }
-    
-    public void setNotes(String notes) { 
-        this.notes = notes; 
+
+    public String getType() {
+        return type != null ? type : "";
     }
-    
-    public String getGender() { 
-        return gender != null ? gender : ""; 
+
+    public void setType(String type) {
+        this.type = type;
     }
-    
-    public void setGender(String gender) { 
-        this.gender = gender; 
+
+    public Date getBirthDate() {
+        return birthDate != null ? new Date(birthDate.getTime()) : null;
+    }
+
+    public void setBirthDate(Date birthDate) {
+        this.birthDate = birthDate != null ? new Date(birthDate.getTime()) : null;
+    }
+
+    public double getWeight() {
+        return weight;
+    }
+
+    public void setWeight(double weight) {
+        this.weight = weight;
+    }
+
+    public double getLength() {
+        return length;
+    }
+
+    public void setLength(double length) {
+        this.length = length;
+    }
+
+    public String getNotes() {
+        return notes != null ? notes : "";
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public String getGender() {
+        return gender != null ? gender : "";
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 
     public String getImagePath() {
@@ -103,7 +112,7 @@ public class Pet {
         if (birthDate == null) {
             return 0;
         }
-        
+
         Date now = new Date();
         long diffInMillies = Math.abs(now.getTime() - birthDate.getTime());
         return (int) (diffInMillies / (1000L * 60 * 60 * 24 * 365));
@@ -124,7 +133,7 @@ public class Pet {
             }
         }
     }
-    
+
     @Override
     public String toString() {
         return String.format("%s (%s)", name, type);
