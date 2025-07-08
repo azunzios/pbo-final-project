@@ -1,6 +1,7 @@
 package com.narangga.swingapp;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -8,10 +9,18 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Image;
 import java.io.File;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
@@ -45,17 +54,18 @@ public class PetManagerPanel extends JPanel {
     private JTable historyTable;
     private DefaultTableModel historyTableModel;
     private PetDAO petDAO;
-    private CareLogDAO careLogDAO;
+    private ScheduleDAO scheduleDAO; // Tambahkan ini
     private JLabel petImageLabel;
     private JButton deletePetButton;
     private MainMenu mainMenu;
+    private JPanel weightHistoryPanel;
     private JTable measurementTable;
     private DefaultTableModel measurementTableModel;
 
     public PetManagerPanel(MainMenu mainMenu) {
         this.mainMenu = mainMenu;
         this.petDAO = new PetDAO();
-        this.careLogDAO = new CareLogDAO();
+        this.scheduleDAO = new ScheduleDAO(); // Inisialisasi ScheduleDAO
         initializeUI();
         loadPets();
     }
@@ -64,6 +74,12 @@ public class PetManagerPanel extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(10, 10, 10, 10));
         setBackground(UIManager.getColor("Panel.background"));
+
+        // Tambahkan label tanggal dan waktu sekarang di atas splitPane
+        JLabel dateTimeLabel = new JLabel(getCurrentDateTimeString());
+        dateTimeLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        dateTimeLabel.setBorder(new EmptyBorder(0, 0, 10, 0));
+        add(dateTimeLabel, BorderLayout.NORTH);
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         add(splitPane, BorderLayout.CENTER);
@@ -74,7 +90,7 @@ public class PetManagerPanel extends JPanel {
         JPanel rightPanel = createRightPanel();
         splitPane.setRightComponent(rightPanel);
 
-        splitPane.setDividerLocation(250);
+        splitPane.setDividerLocation(200);
 
         // Add selection listener to petList
         petList.addListSelectionListener(e -> {
@@ -91,7 +107,6 @@ public class PetManagerPanel extends JPanel {
     private JPanel createLeftPanel() {
         JPanel leftPanel = new JPanel(new BorderLayout(5, 5));
         leftPanel.setBackground(UIManager.getColor("Panel.background"));
-        leftPanel.setPreferredSize(new Dimension(300, 0)); // Sesuaikan ukuran agar tombol tidak terpotong
 
         petListModel = new DefaultListModel<>();
         petList = new JList<>(petListModel);
@@ -196,46 +211,52 @@ public class PetManagerPanel extends JPanel {
     }
 
     private JPanel createButtonPanel() {
-        // Ubah layout menjadi 2 baris, 2 kolom dengan jarak horizontal dan vertikal 5
-        JPanel buttonPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+        JPanel buttonPanel = new JPanel(new GridLayout(5, 1, 5, 5)); // Ubah dari 4 ke 5
         buttonPanel.setBackground(UIManager.getColor("Panel.background"));
 
-        JButton addPetButton = new JButton("Add New Pet");
-        JButton editPetButton = new JButton("Edit Pet");
-        JButton measurementsButton = new JButton("Update Measurements");
-        deletePetButton = new JButton("Delete"); // Asumsi 'deletePetButton' dideklarasikan di level kelas
+        JButton addPetButton = new JButton("Tambah Peliharaan");
+        JButton editPetButton = new JButton("Edit Peliharaan");
+        JButton measurementsButton = new JButton("Update Perkembangan");
+        JButton exportButton = new JButton("Ekspor Data"); // Tombol baru
 
-        // Awalnya nonaktifkan tombol yang memerlukan pilihan
+        editPetButton.setEnabled(false);
+        deletePetButton = new JButton("Hapus Peliharaan");
+        deletePetButton.setEnabled(false);
+
+        // Initially disable edit and measurements buttons
         editPetButton.setEnabled(false);
         deletePetButton.setEnabled(false);
         measurementsButton.setEnabled(false);
+        exportButton.setEnabled(false); // Disable awalnya
 
-        Dimension buttonSize = new Dimension(100, 30); // setPreferredSize mungkin tidak berpengaruh banyak di
-                                                       // GridLayout
+        Dimension buttonSize = new Dimension(100, 30);
         addPetButton.setPreferredSize(buttonSize);
         editPetButton.setPreferredSize(buttonSize);
         measurementsButton.setPreferredSize(buttonSize);
+        exportButton.setPreferredSize(buttonSize);
         deletePetButton.setPreferredSize(buttonSize);
 
         addPetButton.addActionListener(e -> showAddPetDialog());
         editPetButton.addActionListener(e -> showEditPetDialog());
         measurementsButton.addActionListener(e -> showMeasurementsDialog());
+        exportButton.addActionListener(e -> exportPetData()); // Action baru
         deletePetButton.addActionListener(e -> deleteSelectedPet());
 
-        // Tambahkan listener untuk mengaktifkan/menonaktifkan tombol berdasarkan
-        // pilihan
+        // Add selection listener to enable/disable buttons
         petList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 boolean hasSelection = petList.getSelectedValue() != null;
                 editPetButton.setEnabled(hasSelection);
                 measurementsButton.setEnabled(hasSelection);
-                deletePetButton.setEnabled(hasSelection); // Tambahkan ini juga
+                exportButton.setEnabled(hasSelection); // Enable jika ada seleksi
+                deletePetButton.setEnabled(hasSelection);
             }
         });
 
         buttonPanel.add(addPetButton);
         buttonPanel.add(editPetButton);
         buttonPanel.add(measurementsButton);
+        buttonPanel.add(exportButton); // Tambahkan tombol ekspor
         buttonPanel.add(deletePetButton);
 
         return buttonPanel;
@@ -246,37 +267,35 @@ public class PetManagerPanel extends JPanel {
         rightPanel.setBackground(UIManager.getColor("Panel.background"));
 
         JPanel topDetailsPanel = createTopDetailsPanel();
+        topDetailsPanel.setPreferredSize(new Dimension(300, 200));
         rightPanel.add(topDetailsPanel, BorderLayout.NORTH);
 
         JTabbedPane tabbedPane = createHistoryTabbedPane();
+        tabbedPane.setPreferredSize(new Dimension(300, 200));
         rightPanel.add(tabbedPane, BorderLayout.CENTER);
 
         return rightPanel;
     }
 
     private JPanel createTopDetailsPanel() {
-        JPanel topDetailsPanel = new JPanel(new BorderLayout(10, 10));
+        JPanel topDetailsPanel = new JPanel(new BorderLayout(0, 10));
+        topDetailsPanel.setBorder(BorderFactory.createTitledBorder("Profil Peliharaan"));
         topDetailsPanel.setBackground(UIManager.getColor("Panel.background"));
 
-        // Details panel
+        JPanel wrap = new JPanel (new GridLayout(0,2));
+
+
         petDetailsArea = new JTextArea();
         petDetailsArea.setEditable(false);
-        petDetailsArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        petDetailsArea.setLineWrap(true); // Tambahkan agar teks tidak meluas horizontal
-        petDetailsArea.setWrapStyleWord(true);
+        petDetailsArea.setFont(new Font("Aptos", Font.PLAIN, 14));
         JScrollPane detailsScrollPane = new JScrollPane(petDetailsArea);
-        detailsScrollPane.setBorder(BorderFactory.createTitledBorder("Pet Details"));
-        detailsScrollPane.setPreferredSize(new Dimension(0, 200)); // Tetapkan tinggi tetap
+        wrap.add(detailsScrollPane);
 
-        // Image panel
         petImageLabel = new JLabel();
-        petImageLabel.setPreferredSize(new Dimension(150, 150));
         petImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        petImageLabel.setBorder(BorderFactory.createTitledBorder("Photo"));
+        wrap.add(petImageLabel);
 
-        topDetailsPanel.add(detailsScrollPane, BorderLayout.CENTER);
-        topDetailsPanel.add(petImageLabel, BorderLayout.EAST);
-
+        topDetailsPanel.add(wrap, BorderLayout.CENTER);
         return topDetailsPanel;
     }
 
@@ -284,13 +303,18 @@ public class PetManagerPanel extends JPanel {
         JTabbedPane tabbedPane = new JTabbedPane();
 
         // Care History Tab
-        historyTableModel = new DefaultTableModel(new Object[] { "Date", "Care Type", "Notes" }, 0) {
+        historyTableModel = new DefaultTableModel(new Object[] { "Tanggal", "Judul", "Catatan", "Status" }, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
         historyTable = new JTable(historyTableModel);
+        historyTable.setShowHorizontalLines(true);
+        historyTable.setShowVerticalLines(true);
+        historyTable.setIntercellSpacing(new Dimension(1, 1));
+        historyTable.setGridColor(new Color(189, 195, 199));
+        historyTable.setBorder(BorderFactory.createLineBorder(new Color(189, 195, 199), 1));
         tabbedPane.addTab("Care History", new JScrollPane(historyTable));
 
         // Growth History Tab
@@ -302,6 +326,11 @@ public class PetManagerPanel extends JPanel {
             }
         };
         measurementTable = new JTable(measurementTableModel);
+        measurementTable.setShowHorizontalLines(true);
+        measurementTable.setShowVerticalLines(true);
+        measurementTable.setIntercellSpacing(new Dimension(1, 1));
+        measurementTable.setGridColor(new Color(189, 195, 199));
+        measurementTable.setBorder(BorderFactory.createLineBorder(new Color(189, 195, 199), 1));
 
         // Set custom renderer for date column
         measurementTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
@@ -363,6 +392,71 @@ public class PetManagerPanel extends JPanel {
         } else {
             petImageLabel.setIcon(null);
         }
+
+        // Tampilkan semua jadwal milik pet ini di care history
+        try {
+            refreshScheduleHistory(pet.getId());
+        } catch (SQLException ex) {
+            handleError("Gagal memuat jadwal perawatan.", ex);
+        }
+    }
+
+    // Tambahkan method ini untuk menampilkan semua schedule milik pet di care history
+    private void refreshScheduleHistory(int petId) throws SQLException {
+        List<Schedule> schedules = scheduleDAO.getSchedulesByPetId(petId);
+        historyTableModel.setRowCount(0); // Clear existing data
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        
+        for (Schedule s : schedules) {
+            if ("Once".equalsIgnoreCase(s.getRecurrence())) {
+                // Untuk jadwal once, tampilkan dari tabel schedules
+                historyTableModel.addRow(new Object[] {
+                    dateFormat.format(s.getScheduleTime()),
+                    s.getCareType(),
+                    s.getNotes(),
+                    s.isActive() ? "Belum" : "Selesai"
+                });
+            } else {
+                // Untuk jadwal recurring, tampilkan dari schedule_instances yang sudah selesai
+                try {
+                    List<ScheduleInstance> instances = getCompletedInstancesByScheduleId(s.getId());
+                    for (ScheduleInstance instance : instances) {
+                        historyTableModel.addRow(new Object[] {
+                            dateFormat.format(instance.getDate()),
+                            s.getCareType(),
+                            instance.getNotes() != null ? instance.getNotes() : s.getNotes(),
+                            "Selesai"
+                        });
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private List<ScheduleInstance> getCompletedInstancesByScheduleId(int scheduleId) throws SQLException {
+        List<ScheduleInstance> instances = new ArrayList<>();
+        String sql = "SELECT * FROM schedule_instances WHERE schedule_id = ? AND is_done = 1 ORDER BY date DESC";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, scheduleId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    ScheduleInstance instance = new ScheduleInstance(
+                        rs.getInt("schedule_id"),
+                        rs.getDate("date"),
+                        rs.getBoolean("is_done"),
+                        rs.getString("notes")
+                    );
+                    instance.setId(rs.getInt("id"));
+                    instances.add(instance);
+                }
+            }
+        }
+        return instances;
     }
 
     private class PetListCellRenderer extends DefaultListCellRenderer {
@@ -382,8 +476,7 @@ public class PetManagerPanel extends JPanel {
         AddPetForm form = new AddPetForm(this, mainMenu);
         showFormDialog("Add New Pet", form);
         // Tambahkan ini agar HomePanel refresh setelah dialog ditutup
-        if (mainMenu != null)
-            mainMenu.refreshData();
+        if (mainMenu != null) mainMenu.refreshData();
     }
 
     private void showEditPetDialog() {
@@ -400,8 +493,7 @@ public class PetManagerPanel extends JPanel {
 
             // Refresh after editing
             loadPets();
-            if (mainMenu != null)
-                mainMenu.refreshData(); // Tambahkan ini
+            if (mainMenu != null) mainMenu.refreshData(); // Tambahkan ini
         }
     }
 
@@ -428,7 +520,7 @@ public class PetManagerPanel extends JPanel {
     }
 
     public void loadPets() {
-        List<Pet> pets = petDAO.getAllPets(); // Ensure petDAO is connected to the database
+        List<Pet> pets = petDAO.getAllPets();
         petListModel.clear();
         for (Pet pet : pets) {
             petListModel.addElement(pet);
@@ -455,8 +547,7 @@ public class PetManagerPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Pet deleted successfully.", "Success",
                         JOptionPane.INFORMATION_MESSAGE);
                 loadPets();
-                if (mainMenu != null)
-                    mainMenu.refreshData(); // Tambahkan ini
+                if (mainMenu != null) mainMenu.refreshData(); // Tambahkan ini
             } else {
                 handleError("Failed to delete pet.", null);
             }
@@ -470,4 +561,79 @@ public class PetManagerPanel extends JPanel {
                 JOptionPane.ERROR_MESSAGE);
     }
 
+    private String getCurrentDateTimeString() {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy HH:mm", new Locale("id", "ID"));
+        return now.format(formatter);
+    }
+
+    private void exportPetData() {
+        Pet selectedPet = petList.getSelectedValue();
+        if (selectedPet == null) {
+            JOptionPane.showMessageDialog(this, "Pilih peliharaan untuk diekspor!", "Peringatan",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        javax.swing.JFileChooser fileChooser = new javax.swing.JFileChooser();
+        fileChooser.setDialogTitle("Simpan Data Peliharaan");
+        fileChooser.setSelectedFile(new java.io.File(selectedPet.getName() + "_data.txt"));
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Text Files", "txt"));
+
+        int userSelection = fileChooser.showSaveDialog(this);
+        if (userSelection == javax.swing.JFileChooser.APPROVE_OPTION) {
+            java.io.File fileToSave = fileChooser.getSelectedFile();
+            
+            try (java.io.PrintWriter writer = new java.io.PrintWriter(fileToSave)) {
+                // Header informasi pet
+                writer.println("=== DATA PELIHARAAN ===");
+                writer.println("Nama: " + selectedPet.getName());
+                writer.println("Jenis: " + selectedPet.getType());
+                writer.println("Umur: " + selectedPet.getAge() + " tahun");
+                writer.println("Jenis Kelamin: " + selectedPet.getGender());
+                writer.println("Berat: " + String.format("%.2f kg", selectedPet.getWeight()));
+                writer.println("Panjang: " + String.format("%.2f cm", selectedPet.getLength()));
+                writer.println("Catatan: " + (selectedPet.getNotes() != null ? selectedPet.getNotes() : "-"));
+                writer.println();
+
+                // Riwayat perawatan
+                writer.println("=== RIWAYAT PERAWATAN ===");
+                for (int i = 0; i < historyTableModel.getRowCount(); i++) {
+                    String tanggal = historyTableModel.getValueAt(i, 0).toString();
+                    String tipe = historyTableModel.getValueAt(i, 1).toString();
+                    String catatan = historyTableModel.getValueAt(i, 2).toString();
+                    String status = historyTableModel.getValueAt(i, 3).toString();
+                    
+                    writer.println(tanggal + " | " + tipe + " | " + catatan + " | " + status);
+                }
+                writer.println();
+
+                // Riwayat perkembangan
+                writer.println("=== RIWAYAT PERKEMBANGAN ===");
+                for (int i = 0; i < measurementTableModel.getRowCount(); i++) {
+                    String tanggal = measurementTableModel.getValueAt(i, 0).toString();
+                    String berat = measurementTableModel.getValueAt(i, 1).toString();
+                    String panjang = measurementTableModel.getValueAt(i, 2).toString();
+                    String catatan = measurementTableModel.getValueAt(i, 3).toString();
+                    
+                    writer.println(tanggal + " | Berat: " + berat + " kg | Panjang: " + panjang + " cm | " + catatan);
+                }
+
+                JOptionPane.showMessageDialog(this, "Data berhasil diekspor ke: " + fileToSave.getAbsolutePath(),
+                        "Ekspor Berhasil", JOptionPane.INFORMATION_MESSAGE);
+                        
+            } catch (java.io.IOException ex) {
+                JOptionPane.showMessageDialog(this, "Gagal mengekspor data: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    public void refreshCurrentPetDetails() {
+        Pet selectedPet = petList.getSelectedValue();
+        if (selectedPet != null) {
+            updatePetDetails(selectedPet);
+            refreshMeasurementHistory(selectedPet.getId());
+        }
+    }
 }

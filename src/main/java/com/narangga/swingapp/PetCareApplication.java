@@ -5,7 +5,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import com.formdev.flatlaf.themes.FlatMacLightLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 
 public class PetCareApplication {
     public static void main(String[] args) {
@@ -20,7 +20,7 @@ public class PetCareApplication {
 
     private static void setupLookAndFeel() {
         try {
-            UIManager.setLookAndFeel(new FlatMacLightLaf());
+            UIManager.setLookAndFeel(new FlatLightLaf());
         } catch (UnsupportedLookAndFeelException e) {
             e.printStackTrace();
         }

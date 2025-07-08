@@ -7,17 +7,21 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JOptionPane;
 
 public class HomePanel extends JPanel {
 
@@ -37,54 +41,86 @@ public class HomePanel extends JPanel {
         this.scheduleDAO = new ScheduleDAO();
 
         setLayout(new BorderLayout(20, 20));
-        setBackground(BACKGROUND_COLOR);
-        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBackground(new Color(249, 250, 252)); // Latar belakang lebih netral dan modern
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // Padding sisi lebih lebar agar tidak sempit
 
-        // --- Top Panel for Stats ---
-        statsPanel = new JPanel(new GridLayout(1, 2, 20, 0));
+        // Panel utama bagian tengah yang menampung statsPanel dan scrollPane
+        JPanel centerWrapperPanel = new JPanel(new BorderLayout(10, 10));
+        centerWrapperPanel.setOpaque(false);
+
+        // --- Panel Tanggal dan Waktu Sekarang ---
+        JPanel dateTimePanel = new JPanel();
+        dateTimePanel.setOpaque(false);
+        dateTimePanel.setLayout(new BoxLayout(dateTimePanel, BoxLayout.Y_AXIS));
+        JLabel dateTimeLabel = new JLabel(getCurrentDateTimeString());
+        dateTimeLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        dateTimeLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dateTimePanel.add(dateTimeLabel);
+
+        // Tambahkan ke bagian atas frame
+        add(dateTimePanel, BorderLayout.NORTH);
+
+        // --- Top Panel for Stats (Desain Kartu Diperbarui) ---
+        statsPanel = new JPanel(new GridLayout(1, 2, 20, 10));
         statsPanel.setOpaque(false);
 
-        // Ambil data pets dan jadwal SEKARANG
+        // Ambil data (Tidak diubah)
         int totalPets = petDAO.getAllPets().size();
         int dailySchedules = 0;
         try {
-            dailySchedules = scheduleDAO.getAllSchedules().size();
+            // Hanya hitung jadwal yang tanggalnya hari ini (baik aktif maupun selesai)
+            java.time.LocalDate todayDate = java.time.LocalDate.now();
+            List<Schedule> allSchedules = scheduleDAO.getAllSchedules();
+            for (Schedule schedule : allSchedules) {
+                java.time.LocalDate scheduleDate = java.time.LocalDate.ofInstant(
+                    schedule.getScheduleTime().toInstant(),
+                    java.time.ZoneId.systemDefault());
+                if (scheduleDate.equals(todayDate)) {
+                    dailySchedules++;
+                }
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        totalPetsCard = new StatCardPanel("Total Pets", String.valueOf(totalPets), new Color(125, 204, 244));
-        scheduleCountsCard = new StatCardPanel("Daily Schedules", String.valueOf(dailySchedules), new Color(152, 216, 170));
+        // Kartu Statistik dengan warna baru dan placeholder ikon
+        // (Asumsi StatCardPanel bisa menerima ImageIcon)
+        totalPetsCard = new StatCardPanel("Jumlah Peliharaan", String.valueOf(totalPets),
+                new Color(224, 242, 254), new ImageIcon("icons/paw.png"));
+        scheduleCountsCard = new StatCardPanel("Banyak Jadwal Hari ini", String.valueOf(dailySchedules),
+                new Color(220, 252, 231), new ImageIcon("icons/calendar-day.png"));
         statsPanel.add(totalPetsCard);
         statsPanel.add(scheduleCountsCard);
 
-        // --- Center Panel for Upcoming Schedule ---
+        // Tambahkan statsPanel ke panel wrapper center
+        centerWrapperPanel.add(statsPanel, BorderLayout.NORTH);
+
+        // --- Center Panel for Upcoming Schedule (Desain Diperbarui) ---
         upcomingPanel = new JPanel();
         upcomingPanel.setLayout(new BoxLayout(upcomingPanel, BoxLayout.Y_AXIS));
         upcomingPanel.setOpaque(false);
-        upcomingPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
-
-        JLabel upcomingTitle = new JLabel("Beranda");
-        upcomingTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        upcomingTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        upcomingPanel.add(upcomingTitle);
-        upcomingPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        upcomingPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
 
         loadUpcomingSchedules();
 
         JScrollPane scrollPane = new JScrollPane(upcomingPanel);
-        scrollPane.setBorder(null);
+        // scrollPane.setBorder(null);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        add(statsPanel, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
+        // Tambahkan scrollPane ke center wrapper
+        centerWrapperPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // Tambahkan centerWrapperPanel ke layout utama
+        add(centerWrapperPanel, BorderLayout.CENTER);
+
     }
 
-    // Setter agar MainMenu bisa inject SchedulePanel
-    public void setSchedulePanel(SchedulePanel schedulePanel) {
-        this.schedulePanel = schedulePanel;
+    private String getCurrentDateTimeString() {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy HH:mm", new Locale("id", "ID"));
+        return now.format(formatter);
     }
 
     public void refreshData() {
@@ -92,33 +128,84 @@ public class HomePanel extends JPanel {
         int totalPets = petDAO.getAllPets().size();
         int dailySchedules = 0;
         try {
-            dailySchedules = scheduleDAO.getAllSchedules().size();
+            // Hanya hitung jadwal yang tanggalnya hari ini (baik aktif maupun selesai)
+            java.time.LocalDate todayDate = java.time.LocalDate.now();
+            List<Schedule> allSchedules = scheduleDAO.getAllSchedules();
+            dailySchedules = 0;
+            for (Schedule schedule : allSchedules) {
+                java.time.LocalDate scheduleDate = java.time.LocalDate.ofInstant(
+                        schedule.getScheduleTime().toInstant(),
+                        java.time.ZoneId.systemDefault());
+                if (scheduleDate.equals(todayDate)) {
+                    dailySchedules++;
+                }
+            }
         } catch (SQLException e) {
             System.err.println("[HomePanel] Error fetching schedule count: " + e.getMessage());
             e.printStackTrace();
         }
 
         statsPanel.removeAll();
-        totalPetsCard = new StatCardPanel("Total Pets", String.valueOf(totalPets), new Color(125, 204, 244));
-        scheduleCountsCard = new StatCardPanel("Daily Schedules", String.valueOf(dailySchedules), new Color(152, 216, 170));
+        totalPetsCard = new StatCardPanel("Jumlah Peliharaan", String.valueOf(totalPets), new Color(125, 204, 244),
+                new ImageIcon("icons/paw.png"));
+        scheduleCountsCard = new StatCardPanel("Jumlah Jadwal Hari ini", String.valueOf(dailySchedules),
+                new Color(152, 216, 170), new ImageIcon("icons/paw.png"));
         statsPanel.add(totalPetsCard);
         statsPanel.add(scheduleCountsCard);
         statsPanel.revalidate();
         statsPanel.repaint();
-        System.out.println("[HomePanel] Stats updated.");
 
         upcomingPanel.removeAll();
-        JLabel upcomingTitle = new JLabel("Beranda");
-        upcomingTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        upcomingTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-        upcomingPanel.add(upcomingTitle);
-        upcomingPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         loadUpcomingSchedules();
 
         if (schedulePanel != null) {
             schedulePanel.loadSchedules();
-            System.out.println("[HomePanel] SchedulePanel reloaded.");
         }
+    }
+
+    private JPanel createScheduleCard(Schedule schedule, String petName, boolean showCompleteButton) {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(Color.WHITE); // Ubah ke putih
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(getScheduleColor(schedule.getRecurrence()), 4), // Border tebal dengan warna
+                BorderFactory.createEmptyBorder(12, 18, 12, 18)));
+        card.setMaximumSize(new Dimension(500, 200));
+        card.setPreferredSize(new Dimension(340, 200));
+
+        JLabel petLabel = new JLabel(petName);
+        petLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        JLabel careTypeLabel = new JLabel("Jenis: " + schedule.getCareType());
+        careTypeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        JLabel categoryLabel = new JLabel("Kategori: " + schedule.getCategory());
+        categoryLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        java.time.LocalDateTime scheduleTime = java.time.LocalDateTime.ofInstant(
+                schedule.getScheduleTime().toInstant(),
+                java.time.ZoneId.systemDefault());
+        JLabel timeLabel = new JLabel(
+                String.format("Waktu: %02d:%02d", scheduleTime.getHour(), scheduleTime.getMinute()));
+        timeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+
+        // Tambahkan remaining time label
+        JLabel remainingTimeLabel = createRemainingTimeLabel(scheduleTime);
+
+        card.add(petLabel);
+        card.add(Box.createVerticalStrut(4));
+        card.add(careTypeLabel);
+        card.add(categoryLabel);
+        card.add(timeLabel);
+        card.add(remainingTimeLabel);
+
+        if (showCompleteButton) {
+            JButton completeButton = new JButton("Selesaikan");
+            completeButton.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            completeButton.addActionListener(e -> markScheduleAsComplete(schedule));
+            card.add(Box.createVerticalStrut(8));
+            card.add(completeButton);
+        }
+
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return card;
     }
 
     private void loadUpcomingSchedules() {
@@ -127,85 +214,89 @@ public class HomePanel extends JPanel {
             List<Schedule> allSchedules = scheduleDAO.getAllSchedules();
 
             java.time.LocalDate todayDate = java.time.LocalDate.now();
-            List<Schedule> todaySchedules = new ArrayList<>();
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            List<Schedule> todayActiveSchedules = new ArrayList<>();
             List<Schedule> completedSchedules = new ArrayList<>();
 
             for (Schedule schedule : allSchedules) {
-                java.time.LocalDateTime schedTime = com.narangga.swingapp.util.ScheduleUtils.getNextOccurrence(schedule);
-                if (schedTime != null && schedTime.toLocalDate().equals(todayDate)) {
-                    if (schedule.isActive()) {
-                        todaySchedules.add(schedule);
-                    } else {
+                if (!schedule.isActive()) continue; // Skip inactive schedules
+                
+                boolean occursToday = doesScheduleOccurToday(schedule, todayDate);
+                if (occursToday) {
+                    boolean isCompleted = isScheduleCompletedToday(schedule, todayDate);
+                    if (isCompleted) {
                         completedSchedules.add(schedule);
+                    } else {
+                        todayActiveSchedules.add(schedule);
                     }
                 }
             }
 
-            // Section: Jadwal Hari Ini Tersisa
-            JLabel sisaLabel = new JLabel("Jadwal Hari Ini Tersisa (" + todaySchedules.size() + ")");
+            // Sort by urgency - negatif (terlewat) akan ditampilkan terlebih dahulu
+            todayActiveSchedules.sort((s1, s2) -> {
+                java.time.LocalDateTime time1 = java.time.LocalDateTime.ofInstant(s1.getScheduleTime().toInstant(), java.time.ZoneId.systemDefault());
+                java.time.LocalDateTime time2 = java.time.LocalDateTime.ofInstant(s2.getScheduleTime().toInstant(), java.time.ZoneId.systemDefault());
+                
+                java.time.LocalDateTime today1 = todayDate.atTime(time1.toLocalTime());
+                java.time.LocalDateTime today2 = todayDate.atTime(time2.toLocalTime());
+                
+                long diff1 = java.time.Duration.between(now, today1).toMinutes();
+                long diff2 = java.time.Duration.between(now, today2).toMinutes();
+                
+                // Urutkan berdasarkan diff - yang paling negatif (terlewat) dulu
+                return Long.compare(diff1, diff2);
+            });
+
+            // Ambil maksimal 2 jadwal terdekat/terlewat
+            List<Schedule> displaySchedules = todayActiveSchedules.size() > 2 
+                ? todayActiveSchedules.subList(0, 2) 
+                : todayActiveSchedules;
+
+            // Section: Jadwal Hari Ini Tersisa (status == 0)
+            JLabel sisaLabel = new JLabel("Jadwal Hari Ini Tersisa");
             sisaLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
             sisaLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
             upcomingPanel.add(sisaLabel);
-            upcomingPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-            if (todaySchedules.isEmpty()) {
-                JLabel none = new JLabel("Tidak ada jadwal tersisa hari ini.");
-                none.setAlignmentX(Component.LEFT_ALIGNMENT);
-                upcomingPanel.add(none);
+            upcomingPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+            JLabel sisaCount = new JLabel(String.valueOf(todayActiveSchedules.size()));
+            sisaCount.setFont(new Font("Segoe UI", Font.BOLD, 32));
+            sisaCount.setAlignmentX(Component.LEFT_ALIGNMENT);
+            upcomingPanel.add(sisaCount);
+            upcomingPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+            // Tampilkan kartu jadwal yang belum diselesaikan atau pesan jika kosong
+            if (displaySchedules.isEmpty()) {
+                JLabel noScheduleLabel = new JLabel("Tidak ada jadwal tersisa hari ini");
+                noScheduleLabel.setFont(new Font("Segoe UI", Font.ITALIC, 14));
+                noScheduleLabel.setForeground(Color.GRAY);
+                noScheduleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                noScheduleLabel.setPreferredSize(new Dimension(340, 200));
+                upcomingPanel.add(noScheduleLabel);
             } else {
-                for (Schedule schedule : todaySchedules) {
+                JPanel gridPanel = new JPanel(new GridLayout(0, 2, 12, 12));
+                gridPanel.setOpaque(false);
+                for (Schedule schedule : displaySchedules) {
                     Pet pet = petDAO.getPet(schedule.getPetId());
                     String petName = (pet != null) ? pet.getName() : "Unknown Pet";
                     JPanel card = createScheduleCard(schedule, petName, true);
-                    upcomingPanel.add(card);
-                    upcomingPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+                    gridPanel.add(card);
                 }
+                gridPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                upcomingPanel.add(gridPanel);
             }
 
-            // Section: Jadwal Hari Ini Terselesaikan
-            JLabel selesaiLabel = new JLabel("Jadwal Hari Ini Terselesaikan (" + completedSchedules.size() + ")");
+            upcomingPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+            // Section: Jadwal Hari Ini Terselesaikan (status == 1)
+            JLabel selesaiLabel = new JLabel("Jadwal Hari Ini Terselesaikan");
             selesaiLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
             selesaiLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-            upcomingPanel.add(Box.createRigidArea(new Dimension(0, 20)));
             upcomingPanel.add(selesaiLabel);
-            upcomingPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-            if (completedSchedules.isEmpty()) {
-                JLabel none = new JLabel("Belum ada jadwal yang terselesaikan hari ini.");
-                none.setAlignmentX(Component.LEFT_ALIGNMENT);
-                upcomingPanel.add(none);
-            } else {
-                for (Schedule schedule : completedSchedules) {
-                    Pet pet = petDAO.getPet(schedule.getPetId());
-                    String petName = (pet != null) ? pet.getName() : "Unknown Pet";
-                    JPanel card = createScheduleCard(schedule, petName, false);
-                    upcomingPanel.add(card);
-                    upcomingPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-                }
-            }
-
-            // Jadwal berikutnya yang akan datang (paling dekat)
-            Schedule nextSchedule = null;
-            java.time.LocalDateTime soonest = null;
-            for (Schedule schedule : allSchedules) {
-                if (schedule.isActive()) {
-                    java.time.LocalDateTime schedTime = com.narangga.swingapp.util.ScheduleUtils.getNextOccurrence(schedule);
-                    if (schedTime != null && (soonest == null || schedTime.isBefore(soonest))) {
-                        soonest = schedTime;
-                        nextSchedule = schedule;
-                    }
-                }
-            }
-            if (nextSchedule != null) {
-                upcomingPanel.add(Box.createRigidArea(new Dimension(0, 30)));
-                JLabel nextLabel = new JLabel("Jadwal Berikutnya:");
-                nextLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
-                nextLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-                upcomingPanel.add(nextLabel);
-
-                Pet pet = petDAO.getPet(nextSchedule.getPetId());
-                String petName = (pet != null) ? pet.getName() : "Unknown Pet";
-                JPanel card = createScheduleCard(nextSchedule, petName, true);
-                upcomingPanel.add(card);
-            }
+            upcomingPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+            JLabel selesaiCount = new JLabel(String.valueOf(completedSchedules.size()));
+            selesaiCount.setFont(new Font("Segoe UI", Font.BOLD, 32));
+            selesaiCount.setAlignmentX(Component.LEFT_ALIGNMENT);
+            upcomingPanel.add(selesaiCount);
 
         } catch (SQLException e) {
             System.err.println("[HomePanel] Error loading upcoming schedules: " + e.getMessage());
@@ -219,51 +310,143 @@ public class HomePanel extends JPanel {
         System.out.println("[HomePanel] Upcoming schedules loaded.");
     }
 
-    private JPanel createScheduleCard(Schedule schedule, String petName, boolean showCompleteButton) {
-        JPanel card = new JPanel();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(schedule.isActive() ? new Color(230, 255, 230) : new Color(220, 220, 220));
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(schedule.isActive() ? new Color(125, 204, 244) : new Color(149, 165, 166), 2),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
-        ));
-
-        JLabel petLabel = new JLabel("🐾 " + petName);
-        petLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        JLabel careTypeLabel = new JLabel("Jenis: " + schedule.getCareType());
-        careTypeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        JLabel categoryLabel = new JLabel("Kategori: " + schedule.getCategory());
-        categoryLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        java.time.LocalDateTime scheduleTime = java.time.LocalDateTime.ofInstant(
+    private boolean doesScheduleOccurToday(Schedule schedule, java.time.LocalDate todayDate) {
+        String recurrence = schedule.getRecurrence();
+        java.time.LocalDate scheduleDate = java.time.LocalDate.ofInstant(
             schedule.getScheduleTime().toInstant(),
             java.time.ZoneId.systemDefault()
         );
-        JLabel timeLabel = new JLabel(String.format("Waktu: %02d:%02d", scheduleTime.getHour(), scheduleTime.getMinute()));
-        timeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-        card.add(petLabel);
-        card.add(careTypeLabel);
-        card.add(categoryLabel);
-        card.add(timeLabel);
-
-        if (showCompleteButton && schedule.isActive()) {
-            JButton completeButton = new JButton("Selesai");
-            completeButton.addActionListener(e -> markScheduleAsComplete(schedule));
-            card.add(completeButton);
+        if ("Once".equalsIgnoreCase(recurrence)) {
+            return scheduleDate.equals(todayDate);
+        } else if ("Daily".equalsIgnoreCase(recurrence)) {
+            return true; // Daily schedules occur every day
+        } else if ("Weekly".equalsIgnoreCase(recurrence)) {
+            String days = schedule.getDays() == null ? "" : schedule.getDays().toLowerCase();
+            String todayName = todayDate.getDayOfWeek().getDisplayName(
+                java.time.format.TextStyle.FULL, new java.util.Locale("id", "ID")).toLowerCase();
+            return days.contains(todayName);
+        } else if ("Monthly".equalsIgnoreCase(recurrence)) {
+            return todayDate.getDayOfMonth() == scheduleDate.getDayOfMonth();
         }
+        return false;
+    }
 
-        card.setAlignmentX(Component.LEFT_ALIGNMENT);
-        return card;
+    private boolean isScheduleCompletedToday(Schedule schedule, java.time.LocalDate todayDate) {
+        String recurrence = schedule.getRecurrence();
+        if ("Once".equalsIgnoreCase(recurrence)) {
+            return !schedule.isActive(); // For once schedules, check is_active
+        } else {
+            // For recurring schedules, check schedule_instances
+            try {
+                return new ScheduleInstanceDAO().isInstanceDone(schedule.getId(), java.sql.Date.valueOf(todayDate));
+            } catch (SQLException e) {
+                return false;
+            }
+        }
+    }
+
+    private JLabel createRemainingTimeLabel(java.time.LocalDateTime scheduleTime) {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.LocalDate today = java.time.LocalDate.now();
+        
+        // Gabungkan tanggal hari ini dengan waktu jadwal
+        java.time.LocalDateTime todayScheduleTime = today.atTime(scheduleTime.toLocalTime());
+        
+        long diffMinutes = java.time.Duration.between(now, todayScheduleTime).toMinutes();
+        
+        String remainingText;
+        Color textColor;
+        
+        if (diffMinutes < 0) {
+            remainingText = "Terlewat";
+            textColor = Color.RED;
+        } else if (diffMinutes < 60) {
+            remainingText = diffMinutes + " menit lagi";
+            textColor = new Color(255, 140, 0); // Orange
+        } else {
+            long hours = diffMinutes / 60;
+            long minutes = diffMinutes % 60;
+            if (minutes == 0) {
+                remainingText = hours + " jam lagi";
+            } else {
+                remainingText = hours + " jam " + minutes + " menit lagi";
+            }
+            textColor = new Color(0, 150, 0); // Green
+        }
+        
+        JLabel remainingTimeLabel = new JLabel(remainingText);
+        remainingTimeLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        remainingTimeLabel.setForeground(textColor);
+        
+        return remainingTimeLabel;
+    }
+
+    private Color getScheduleColor(String recurrence) {
+        if (recurrence == null)
+            return new Color(230, 255, 230);
+        switch (recurrence.toLowerCase()) {
+            case "once":
+                return new Color(46, 204, 113); // Emerald
+            case "daily":
+                return new Color(155, 89, 182); // Amethyst
+            case "weekly":
+                return new Color(52, 152, 219); // Blue
+            case "monthly":
+                return new Color(231, 76, 60); // Red
+            default:
+                return new Color(230, 255, 230);
+        }
     }
 
     private void markScheduleAsComplete(Schedule schedule) {
         try {
-            schedule.setActive(false);
-            scheduleDAO.updateSchedule(schedule);
-            JOptionPane.showMessageDialog(this, "Jadwal berhasil ditandai sebagai selesai!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            java.time.LocalDate todayDate = java.time.LocalDate.now();
+            String recurrence = schedule.getRecurrence();
+            
+            if ("Once".equalsIgnoreCase(recurrence)) {
+                // For once schedules, set is_active to false
+                schedule.setActive(false);
+                scheduleDAO.updateSchedule(schedule);
+            } else {
+                // For recurring schedules, add to schedule_instances
+                String notes = null;
+                boolean requireNotes = com.narangga.swingapp.settings.UserSettings.getCurrentSettings().isRequireNotes();
+                if (requireNotes) {
+                    notes = JOptionPane.showInputDialog(
+                        this,
+                        "Tambahkan catatan (opsional):",
+                        "Catatan Perawatan",
+                        JOptionPane.PLAIN_MESSAGE
+                    );
+                }
+                new ScheduleInstanceDAO().addInstance(
+                    schedule.getId(),
+                    java.sql.Date.valueOf(todayDate),
+                    true,
+                    notes
+                );
+            }
+            
+            JOptionPane.showMessageDialog(this, "Jadwal berhasil ditandai sebagai selesai!", "Sukses",
+                    JOptionPane.INFORMATION_MESSAGE);
             refreshData();
+            
+            // Refresh PetManagerPanel jika ada
+            java.awt.Component comp = this;
+            while (comp != null && !(comp instanceof MainMenu)) {
+                comp = comp.getParent();
+            }
+            if (comp instanceof MainMenu mainMenu) {
+                mainMenu.refreshPetManagerPanel();
+            }
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    // Tambahkan setter agar MainMenu bisa inject SchedulePanel
+    public void setSchedulePanel(SchedulePanel schedulePanel) {
+        this.schedulePanel = schedulePanel;
     }
 }

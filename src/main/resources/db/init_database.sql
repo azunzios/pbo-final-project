@@ -188,3 +188,30 @@ ALTER TABLE care_logs
 INSERT IGNORE INTO users (username, password_hash, email, full_name)
 VALUES ('admin', SHA2('admin123', 256), 'admin@example.com', 'Administrator');
 
+ALTER TABLE pet_measurements
+DROP FOREIGN KEY pet_measurements_ibfk_1;
+
+ALTER TABLE pet_measurements
+ADD CONSTRAINT pet_measurements_ibfk_1
+FOREIGN KEY (pet_id) REFERENCES pets(id)
+ON DELETE CASCADE;
+
+CREATE TABLE schedule_instances (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    schedule_id INTEGER,
+    date DATE,
+    is_done BOOLEAN,
+    notes TEXT,
+    done_at TIMESTAMP,
+    FOREIGN KEY(schedule_id) REFERENCES schedules(id)
+);
+
+ALTER TABLE schedule_instances
+DROP FOREIGN KEY schedule_instances_ibfk_1;
+
+ALTER TABLE schedule_instances
+ADD CONSTRAINT schedule_instances_ibfk_1
+FOREIGN KEY (schedule_id) REFERENCES schedules(id)
+ON DELETE CASCADE;
+
+

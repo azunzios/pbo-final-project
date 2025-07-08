@@ -2,6 +2,7 @@ package com.narangga.swingapp;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Frame;
 import java.awt.GridBagConstraints;
@@ -50,12 +51,9 @@ public class AddScheduleForm extends JDialog {
 
     public AddScheduleForm(SchedulePanel parent, Schedule scheduleToEdit) {
         super(
-            parent != null && SwingUtilities.getWindowAncestor(parent) != null
-                ? (Frame) SwingUtilities.getWindowAncestor(parent)
-                : null, // Pastikan parent tidak null dan memiliki Window ancestor
-            scheduleToEdit == null ? "Tambah Jadwal Baru" : "Edit Jadwal",
-            true
-        );
+                parent == null ? null : (Frame) SwingUtilities.getWindowAncestor(parent),
+                scheduleToEdit == null ? "Tambah Jadwal Baru" : "Edit Jadwal",
+                true);
         this.parent = parent;
         this.scheduleToEdit = scheduleToEdit;
         initializeUI();
@@ -150,7 +148,7 @@ public class AddScheduleForm extends JDialog {
     private void loadPets() {
         PetDAO petDAO = new PetDAO();
         try {
-            List<Pet> pets = petDAO.getAllPets(); // Ensure petDAO is connected to the database
+            List<Pet> pets = petDAO.getAllPets();
             for (Pet pet : pets) {
                 petComboBox.addItem(pet);
             }
@@ -198,7 +196,9 @@ public class AddScheduleForm extends JDialog {
     }
 
     private void saveSchedule() {
+        if (parent == null) return;
         try {
+            // Validasi input
             Pet selectedPet = (Pet) petComboBox.getSelectedItem();
             if (selectedPet == null) {
                 JOptionPane.showMessageDialog(this, "Please select a pet.", "Validation Error",
@@ -210,38 +210,79 @@ public class AddScheduleForm extends JDialog {
             String notes = notesArea.getText().trim();
             String recurrence = (String) recurrenceBox.getSelectedItem();
             Date scheduleTime = (Date) timeSpinner.getValue();
+            Date finalScheduleTime = new Date();
 
-            if ("Once".equals(recurrence)) {
-                Date selectedDate = (Date) dateSpinner.getValue();
-                selectedDate.setHours(scheduleTime.getHours());
-                selectedDate.setMinutes(scheduleTime.getMinutes());
-                selectedDate.setSeconds(0);
-                scheduleTime = selectedDate;
+            switch (recurrence) {
+                case "Once":
+                    Date selectedDate = (Date) dateSpinner.getValue();
+                    finalScheduleTime.setTime(selectedDate.getTime());
+                    finalScheduleTime.setHours(scheduleTime.getHours());
+                    finalScheduleTime.setMinutes(scheduleTime.getMinutes());
+                    finalScheduleTime.setSeconds(0);
+                    break;
+                    
+                case "Monthly":
+                    finalScheduleTime = new Date();
+                    int day = (Integer) monthDaySpinner.getValue();
+                    finalScheduleTime.setDate(day);
+                    finalScheduleTime.setHours(scheduleTime.getHours());
+                    finalScheduleTime.setMinutes(scheduleTime.getMinutes());
+                    finalScheduleTime.setSeconds(0);
+                    break;
+                    
+                case "Weekly":
+                    if (getSelectedDays().isEmpty()) {
+                        JOptionPane.showMessageDialog(this, 
+                            "Pilih minimal satu hari untuk jadwal mingguan", 
+                            "Validation Error", 
+                            JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    finalScheduleTime = scheduleTime;
+                    break;
+                    
+                case "Daily":
+                    finalScheduleTime = scheduleTime;
+                    break;
             }
 
             Schedule schedule = new Schedule(
-                    selectedPet.getId(),
-                    careType,
-                    scheduleTime,
-                    getSelectedDays(),
-                    recurrence,
-                    (String) categoryBox.getSelectedItem(),
-                    notes);
+                selectedPet.getId(),
+                careType,
+                finalScheduleTime,
+                getSelectedDays(),
+                recurrence,
+                (String) categoryBox.getSelectedItem(),
+                notes);
 
             ScheduleDAO scheduleDAO = new ScheduleDAO();
-            scheduleDAO.addSchedule(schedule); // Ensure scheduleDAO is connected to the database
-
-            JOptionPane.showMessageDialog(this, "Schedule saved successfully!");
+            if (scheduleToEdit != null) {
+                // Edit mode
+                schedule.setId(scheduleToEdit.getId());
+                scheduleDAO.updateSchedule(schedule);
+                JOptionPane.showMessageDialog(this, "Schedule updated successfully!");
+            } else {
+                // Add mode
+                scheduleDAO.addSchedule(schedule);
+                JOptionPane.showMessageDialog(this, "Schedule saved successfully!");
+            }
             parent.loadSchedules();
-            if (parent != null && parent.getMainMenu() != null) {
-                parent.getMainMenu().refreshData();
+
+            // Cari MainMenu dari parent chain, lalu refreshData (agar HomePanel juga refresh)
+            Component comp = parent;
+            while (comp != null && !(comp instanceof MainMenu)) {
+                comp = comp.getParent();
+            }
+            if (comp instanceof MainMenu mainMenu) {
+                mainMenu.refreshData();
             }
             dispose();
         } catch (Exception e) {
+            e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                    "Error: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
+                "Error: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 

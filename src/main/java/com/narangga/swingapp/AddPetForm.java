@@ -7,6 +7,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Window;
+import java.io.File;
 import java.sql.Date;
 import java.util.Objects;
 
@@ -23,6 +24,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import com.toedter.calendar.JDateChooser;
 
@@ -180,12 +182,20 @@ public class AddPetForm extends JPanel {
 
     private void selectImage() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Pilih Gambar Hewan");
-        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        fileChooser.setDialogTitle("Pilih Gambar Peliharaan");
+        fileChooser.setFileFilter(new FileNameExtensionFilter("Image files", "jpg", "jpeg", "png", "gif"));
+        
         int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
-            imagePathField.setText(fileChooser.getSelectedFile().getAbsolutePath());
+            File selectedFile = fileChooser.getSelectedFile();
+            imagePathField.setText(selectedFile.getAbsolutePath());
+            updateImagePreview(selectedFile.getAbsolutePath());
         }
+    }
+
+    private void updateImagePreview(String imagePath) {
+        // Placeholder for updating image preview logic
+        JOptionPane.showMessageDialog(this, "Preview gambar diperbarui: " + imagePath, "Info", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void closeWindow() {

@@ -1,12 +1,24 @@
 package com.narangga.swingapp;
 
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-
-import com.narangga.swingapp.util.ScheduleUtils;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
+
+import com.narangga.swingapp.util.ScheduleUtils;
 
 public class ScheduleCardPanel extends JPanel {
     private static final Color SHADOW_COLOR = new Color(0, 0, 0, 50);

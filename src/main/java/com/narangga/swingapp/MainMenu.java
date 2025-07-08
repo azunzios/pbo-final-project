@@ -6,6 +6,8 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Image;
+import java.awt.FlowLayout;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -83,49 +85,79 @@ public class MainMenu extends JFrame {
         });
     }
 
-    private JPanel createSideBar() {
-        JPanel sideBar = new JPanel();
-        sideBar.setLayout(new BoxLayout(sideBar, BoxLayout.Y_AXIS));
-        sideBar.setBackground(new Color(240, 240, 240));
-        sideBar.setPreferredSize(new Dimension(200, 0));
-        sideBar.setBorder(BorderFactory.createEmptyBorder(20, 10, 20, 10));
+   private JPanel createSideBar() {
+    // Panel utama sidebar
+    JPanel sideBar = new JPanel();
+    sideBar.setLayout(new BorderLayout());
+    sideBar.setBackground(new Color(248, 249, 250));
+    sideBar.setPreferredSize(new Dimension(220, 0));
+    sideBar.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15));
 
-        // Tambahkan logo
-        JLabel logoLabel = new JLabel(new ImageIcon("path/to/logo.png")); // Ganti dengan path logo
-        logoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        sideBar.add(logoLabel);
-        sideBar.add(Box.createRigidArea(new Dimension(0, 20)));
+    // --- TOP: Logo dan Judul ---
+    JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 10));
+    topPanel.setOpaque(false);
 
-        JLabel titleLabel = new JLabel("PetCare");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setForeground(new Color(70, 70, 70));
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        sideBar.add(titleLabel);
-        sideBar.add(Box.createRigidArea(new Dimension(0, 30)));
-
-        JLabel greetingLabel = new JLabel(getGreeting());
-        greetingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        greetingLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        userNameLabel = new JLabel("User");
-        userNameLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        userNameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        sideBar.add(greetingLabel);
-        sideBar.add(userNameLabel);
-        sideBar.add(Box.createRigidArea(new Dimension(0, 30)));
-
-        homeButton = addMenuButton(sideBar, "Beranda", "HOME");
-        addMenuButton(sideBar, "Peliharaan", "PETS");
-        addMenuButton(sideBar, "Jadwal", "SCHEDULE");
-
-        sideBar.add(Box.createVerticalGlue());
-
-        addMenuButton(sideBar, "Settings", "SETTINGS");
-        addMenuButton(sideBar, "Logout", "LOGOUT");
-
-        return sideBar;
+    // Load logo from resources
+    ImageIcon logo = new ImageIcon(getClass().getResource("/icons/logo.png"));
+    if (logo.getImage() != null) {
+        // Scale logo to smaller size
+        Image scaled = logo.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+        logo = new ImageIcon(scaled);
     }
+    JLabel logoLabel = new JLabel(logo);
+    
+    JLabel titleLabel = new JLabel("PetCare");
+    titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+    titleLabel.setForeground(new Color(33, 37, 41));
+
+    topPanel.add(logoLabel);
+    topPanel.add(titleLabel);
+
+    // Add spacing after logo+title
+    topPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+    // --- MIDDLE: Menu utama ---
+    JPanel menuPanel = new JPanel();
+    menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
+    menuPanel.setOpaque(false);
+
+    JLabel greetingLabel = new JLabel(getGreeting());
+    greetingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+    greetingLabel.setForeground(new Color(100, 100, 100));
+    greetingLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+    menuPanel.add(greetingLabel);
+
+    userNameLabel = new JLabel("User");
+    userNameLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+    userNameLabel.setForeground(new Color(50, 50, 50));
+    userNameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+    menuPanel.add(userNameLabel);
+
+    menuPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+    homeButton = addMenuButton(menuPanel, " Beranda", "HOME", "icons/3d-house.png");
+    addMenuButton(menuPanel, " Peliharaan", "PETS", "icons/paw.png");
+    addMenuButton(menuPanel, " Jadwal", "SCHEDULE", "icons/3d-calendar.png");
+
+    // Tambah "space" agar Settings & Logout berada di bawah
+    menuPanel.add(Box.createVerticalGlue());
+
+    // --- BOTTOM: Settings dan Logout ---
+    JPanel bottomPanel = new JPanel();
+    bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
+    bottomPanel.setOpaque(false);
+
+    addMenuButton(bottomPanel, "Settings", "SETTINGS", null);
+    addMenuButton(bottomPanel, "Logout", "LOGOUT", null);
+
+    // Tambahkan semua ke panel utama
+    sideBar.add(topPanel, BorderLayout.NORTH);
+    sideBar.add(menuPanel, BorderLayout.CENTER);
+    sideBar.add(bottomPanel, BorderLayout.SOUTH);
+
+    return sideBar;
+}
+
 
     private JPanel createMainContentPanel() {
         mainContentPanel = new JPanel(cardLayout); // Gunakan cardLayout yang sudah diinisialisasi
@@ -156,8 +188,27 @@ public class MainMenu extends JFrame {
         return mainContentPanel;
     }
 
-    private JButton addMenuButton(JPanel panel, String text, String actionCommand) {
+    private ImageIcon loadMenuIcon(String iconName) {
+        try {
+            ImageIcon icon = new ImageIcon(getClass().getResource("/" + iconName));
+            if (icon.getImage() != null) {
+                Image scaled = icon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+                return new ImageIcon(scaled);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to load icon: " + iconName);
+        }
+        return null;
+    }
+
+    private JButton addMenuButton(JPanel panel, String text, String actionCommand, String iconName) {
         JButton button = new JButton(text);
+        if (iconName != null) {
+            ImageIcon icon = loadMenuIcon(iconName);
+            if (icon != null) {
+                button.setIcon(icon);
+            }
+        }
         button.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         button.setActionCommand(actionCommand);
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -218,6 +269,13 @@ public class MainMenu extends JFrame {
         if (petManagerPanel != null) {
             petManagerPanel.loadPets();
             System.out.println("[MainMenu] PetManagerPanel refreshed.");
+        }
+    }
+
+    public void refreshPetManagerPanel() {
+        if (petManagerPanel != null) {
+            petManagerPanel.refreshCurrentPetDetails();
+            System.out.println("[MainMenu] PetManagerPanel care history refreshed.");
         }
     }
 

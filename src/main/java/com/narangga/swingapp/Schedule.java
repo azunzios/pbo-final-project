@@ -73,7 +73,7 @@ public class Schedule {
     }
 
     public void activate() {
-        isActive = true;
+        // s = true;
     }
 
     public void deactivate() {
