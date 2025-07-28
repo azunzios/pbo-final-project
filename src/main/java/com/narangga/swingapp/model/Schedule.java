@@ -1,4 +1,4 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.model;
 
 import java.util.Date;
 
@@ -36,33 +36,20 @@ public class Schedule {
         return petId;
     }
 
-    public void setPetId(int petId) {
-        this.petId = petId;
-    }
-
     public String getCareType() {
         return careType;
     }
 
-    public void setCareType(String careType) {
-        this.careType = careType;
-    }
 
     public Date getScheduleTime() {
         return scheduleTime != null ? new Date(scheduleTime.getTime()) : null;
     }
 
-    public void setScheduleTime(Date scheduleTime) {
-        this.scheduleTime = scheduleTime != null ? new Date(scheduleTime.getTime()) : null;
-    }
 
     public String getDays() {
         return days;
     }
 
-    public void setDays(String days) {
-        this.days = days;
-    }
 
     public boolean isActive() {
         return isActive;
@@ -72,30 +59,15 @@ public class Schedule {
         isActive = active;
     }
 
-    public void activate() {
-        // s = true;
-    }
-
-    public void deactivate() {
-        isActive = false;
-    }
-
-    // Placeholder for isToday method
     public String getRecurrence() {
         return recurrence;
     }
 
-    public void setRecurrence(String recurrence) {
-        this.recurrence = recurrence;
-    }
 
     public String getCategory() {
         return category;
     }
 
-    public void setCategory(String category) {
-        this.category = category;
-    }
 
     public String getNotes() {
         return notes;
@@ -105,9 +77,4 @@ public class Schedule {
         this.notes = notes;
     }
 
-    public boolean isToday() {
-        // Check if today is in the days string
-        // This is a placeholder
-        return true;
-    }
 }

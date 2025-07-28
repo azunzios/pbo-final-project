@@ -1,9 +1,7 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.panel;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 public class LoadingPanel extends JPanel {
     private JLabel loadingLabel;
@@ -18,18 +16,18 @@ public class LoadingPanel extends JPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.insets = new Insets(5, 5, 5, 5);
 
-        // Loading text with animated dots
+        // loading texxt
         loadingLabel = new JLabel("Loading");
         loadingLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         add(loadingLabel, gbc);
 
-        // Add loading circle
+        // animasi loading circle
         loadingCircle = new LoadingCircle();
         gbc.gridy = 1;
         gbc.insets = new Insets(10, 5, 5, 5);
         add(loadingCircle, gbc);
 
-        // Timer for dot animation
+        // pengaturan waktunya
         dotTimer = new Timer(500, e -> {
             dotCount = (dotCount + 1) % 4;
             StringBuilder dots = new StringBuilder();

@@ -1,4 +1,4 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.form;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -42,14 +42,14 @@ public class RegisterForm extends JDialog {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Add form components
+        // Nambahkan komponen untuk form
         addFormField(mainPanel, "Username:", usernameField = new JTextField(20), gbc, 0);
         addFormField(mainPanel, "Password:", passwordField = new JPasswordField(20), gbc, 1);
         addFormField(mainPanel, "Confirm Password:", confirmPasswordField = new JPasswordField(20), gbc, 2);
         addFormField(mainPanel, "Email:", emailField = new JTextField(20), gbc, 3);
         addFormField(mainPanel, "Full Name:", fullNameField = new JTextField(20), gbc, 4);
 
-        // Buttons
+        // tombol2nya
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton registerButton = new JButton("Register");
         JButton cancelButton = new JButton("Cancel");

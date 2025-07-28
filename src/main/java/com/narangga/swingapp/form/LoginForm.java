@@ -1,4 +1,4 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.form;
 
 import java.awt.CardLayout;
 import java.awt.FlowLayout;
@@ -18,11 +18,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 
+import com.narangga.swingapp.panel.MainMenu;
 import com.narangga.swingapp.dao.UserDAO;
 import com.narangga.swingapp.model.User;
+import com.narangga.swingapp.panel.LoadingPanel;
 import com.narangga.swingapp.settings.UserSettings;
 
 public class LoginForm extends JFrame {
@@ -35,7 +36,7 @@ public class LoginForm extends JFrame {
     private JPanel loadingPanel;
 
     public LoginForm() {
-        super("Login - PetCare");
+        super("Login - Pet Care Manager");
         this.userDAO = new UserDAO();
         initializeUI();
     }
@@ -48,27 +49,25 @@ public class LoginForm extends JFrame {
 
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
-        
-        // Create login panel
+
+        // Login panelnya dulu
         loginPanel = new JPanel(new GridBagLayout());
         loginPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
-        // Create loading panel
+        // buat loading panel
         loadingPanel = new LoadingPanel();
-        
-        // Add panels to card layout
+
         contentPanel.add(loginPanel, "login");
         contentPanel.add(loadingPanel, "loading");
         
         add(contentPanel);
 
-        // Rest of the login panel UI setup
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridwidth = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(5, 5, 5, 5);
 
-        // Add logo and title in one panel
+        // logo sama judul
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         headerPanel.setOpaque(false);
 
@@ -79,7 +78,7 @@ public class LoginForm extends JFrame {
             headerPanel.add(logoLabel);
         }
 
-        JLabel titleLabel = new JLabel("PetCare Login");
+        JLabel titleLabel = new JLabel("Pet Care Manager Login");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
         headerPanel.add(titleLabel);
 
@@ -88,7 +87,7 @@ public class LoginForm extends JFrame {
         gbc.gridwidth = 2;
         loginPanel.add(headerPanel, gbc);
 
-        // Username (adjust gridy)
+        // Username
         gbc.gridwidth = 1;
         gbc.gridx = 0;
         gbc.gridy = 1;
@@ -106,10 +105,10 @@ public class LoginForm extends JFrame {
 
         gbc.gridx = 1;
         passwordField = new JPasswordField(15);
-        passwordField.addActionListener(evt -> handleLogin()); // Login on Enter
+        passwordField.addActionListener(evt -> handleLogin());
         loginPanel.add(passwordField, gbc);
 
-        // Buttons
+        // Tombol2
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton loginButton = new JButton("Login");
         JButton registerButton = new JButton("Register");

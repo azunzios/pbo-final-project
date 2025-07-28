@@ -1,4 +1,4 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.model;
 
 import java.sql.Timestamp;
 

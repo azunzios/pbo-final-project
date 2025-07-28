@@ -1,4 +1,4 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.panel;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -41,15 +41,20 @@ import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.TableRowSorter;
 
+import com.narangga.swingapp.model.Pet;
+import com.narangga.swingapp.dao.PetDAO;
+import com.narangga.swingapp.model.Schedule;
+import com.narangga.swingapp.dao.ScheduleDAO;
+import com.narangga.swingapp.dao.ScheduleInstanceDAO;
+import com.narangga.swingapp.form.AddScheduleForm;
 import com.narangga.swingapp.model.ScheduleTableModel;
 
 public class SchedulePanel extends JPanel {
-    // Enhanced color scheme inspired by modern game UI
+
     private static final Color ONCE_COLOR = new Color(46, 204, 113); // Emerald
     private static final Color DAILY_COLOR = new Color(155, 89, 182); // Amethyst
     private static final Color WEEKLY_COLOR = new Color(52, 152, 219); // Blue
     private static final Color MONTHLY_COLOR = new Color(231, 76, 60); // Red
-    private static final Color COMPLETED_COLOR = new Color(149, 165, 166); // Gray 
 
     private final MainMenu mainMenu;
     private final ScheduleDAO scheduleDAO;
@@ -64,14 +69,13 @@ public class SchedulePanel extends JPanel {
     private JTable scheduleTable;
     private ScheduleTableModel tableModel;
 
-    private static final int CELL_HEIGHT = 150; // Lebih tinggi untuk multi-line detail
+    private static final int CELL_HEIGHT = 150;
 
-    // For managing multiple schedules in same time slot
     private Map<String, List<Schedule>> schedulesByTimeSlot = new HashMap<>();
-    // Tambahkan map untuk menandai instance selesai per tanggal (jadwal recurring)
+
+    // Map untuk menandai instance selesai per tanggal (jadwal recurring)
     private final Map<String, Boolean> finishedInstanceMap = new HashMap<>();
 
-    // Add this helper method to SchedulePanel:
     private boolean doesScheduleOccurOn(Schedule schedule, LocalDate date) {
         String recurrence = schedule.getRecurrence();
         if ("Once".equalsIgnoreCase(recurrence)) {
@@ -82,7 +86,6 @@ public class SchedulePanel extends JPanel {
             return true;
         }
         if ("Weekly".equalsIgnoreCase(recurrence) || (schedule.getDays() != null && !schedule.getDays().isEmpty())) {
-            // Support both English and Indonesian day names
             String dayOfWeekEn = date.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
             String dayOfWeekId = date.getDayOfWeek().getDisplayName(TextStyle.FULL, new Locale("id", "ID"));
             String days = schedule.getDays() == null ? "" : schedule.getDays().toLowerCase();
@@ -125,10 +128,10 @@ public class SchedulePanel extends JPanel {
         tabbedPane = new JTabbedPane();
         tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-        // Calendar Tab
+        //pane kalender
         calendarPanel = createCalendarPanel();
 
-        // Manage Tab
+        //panel manage (kelola jadwal)
         managePanel = createManagePanel();
 
         tabbedPane.addTab("Kalender", calendarPanel);
@@ -149,7 +152,7 @@ public class SchedulePanel extends JPanel {
     private JPanel createManagePanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        // Initialize table
+        //membuat tabel2
         tableModel = new ScheduleTableModel(new ArrayList<>(), new ArrayList<>());
         scheduleTable = new JTable(tableModel);
         scheduleTable.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -165,10 +168,9 @@ public class SchedulePanel extends JPanel {
         scheduleTable.getTableHeader().setForeground(Color.BLACK);
         scheduleTable.setBorder(BorderFactory.createLineBorder(new Color(189, 195, 199)));
 
-        // Hanya bisa single select, tidak bisa multi select
         scheduleTable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
 
-        // Tambahkan sorter untuk sorting dan search
+        // sorting dan search
         sorter = new TableRowSorter<>(tableModel);
         scheduleTable.setRowSorter(sorter);
 
@@ -206,11 +208,11 @@ public class SchedulePanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(scheduleTable);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(189, 195, 199), 2));
 
-        // Set faster scroll speed
+        // scroll speed
         scrollPane.getVerticalScrollBar().setUnitIncrement(96); // 2x cell height
         scrollPane.getHorizontalScrollBar().setUnitIncrement(120);
 
-        // Plain button panel
+
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
 
         JButton editButton = new JButton("Edit");
@@ -229,7 +231,6 @@ public class SchedulePanel extends JPanel {
         buttonPanel.add(deleteButton);
         buttonPanel.add(markDoneButton);
 
-        // Tambahkan searchPanel di atas tabel
         panel.add(searchPanel, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
         panel.add(buttonPanel, BorderLayout.SOUTH);
@@ -408,7 +409,7 @@ public class SchedulePanel extends JPanel {
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(189, 195, 199), 2));
         scrollPane.setPreferredSize(new Dimension(800, 600));
 
-        // Set faster scroll speed
+        // atur scroll speed lebih cepat
         scrollPane.getVerticalScrollBar().setUnitIncrement(96);
         scrollPane.getHorizontalScrollBar().setUnitIncrement(120);
 
@@ -416,7 +417,6 @@ public class SchedulePanel extends JPanel {
     }
 
     public void loadSchedules() {
-        // Perbaiki label minggu agar menampilkan rentang bulan jika berbeda bulan
         DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("d", new Locale("id", "ID"));
         DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM", new Locale("id", "ID"));
         DateTimeFormatter yearFormatter = DateTimeFormatter.ofPattern("yyyy", new Locale("id", "ID"));
@@ -432,10 +432,9 @@ public class SchedulePanel extends JPanel {
 
         String monthYearLabel;
         if (start.getMonth().equals(end.getMonth())) {
-            // Satu bulan
             monthYearLabel = startDay + " - " + endDay + " " + endMonth + " " + year;
         } else {
-            // Bulan berbeda
+            //buat minggu untuk bulan yang berbeda
             monthYearLabel = startDay + " " + startMonth + " - " + endDay + " " + endMonth + " " + year;
         }
         weekLabel.setText(monthYearLabel);
@@ -463,7 +462,7 @@ public class SchedulePanel extends JPanel {
         };
         worker.execute();
 
-        // Update table model
+        // update tabel
         try {
             List<Schedule> schedules = scheduleDAO.getAllSchedules();
             List<Pet> pets = petDAO.getAllPets();
@@ -487,18 +486,17 @@ public class SchedulePanel extends JPanel {
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
 
-        // Clear previous schedule mapping
+        //clear data sebelumnya
         schedulesByTimeSlot.clear();
         finishedInstanceMap.clear();
 
-        // Group schedules by day
+        // ini grouping jadwal
         Map<LocalDate, List<Schedule>> schedulesByDay = new HashMap<>();
         for (int i = 0; i < 7; i++) {
             LocalDate day = currentWeekStart.plusDays(i);
             schedulesByDay.put(day, new ArrayList<>());
         }
         for (Schedule schedule : allSchedules) {
-            // Tampilkan semua jadwal (aktif dan tidak aktif)
             for (int i = 0; i < 7; i++) {
                 LocalDate day = currentWeekStart.plusDays(i);
                 if (doesScheduleOccurOn(schedule, day)) {
@@ -507,7 +505,6 @@ public class SchedulePanel extends JPanel {
             }
         }
 
-        // Sort schedules in each day by time ascending
         for (List<Schedule> daySchedules : schedulesByDay.values()) {
             daySchedules.sort((s1, s2) -> {
                 LocalDateTime t1 = LocalDateTime.ofInstant(s1.getScheduleTime().toInstant(), ZoneId.systemDefault());
@@ -516,7 +513,6 @@ public class SchedulePanel extends JPanel {
             });
         }
 
-        // Header row: days
         DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("EEE, dd MMM", new Locale("id", "ID"));
         for (int i = 0; i < 7; i++) {
             gbc.gridx = i;
@@ -530,7 +526,6 @@ public class SchedulePanel extends JPanel {
             calendarGrid.add(dayLabel, gbc);
         }
 
-        // Jadikan satu cell per hari, dan stack semua jadwal ke bawah (top-down)
         gbc.weighty = 1.0;
         for (int col = 0; col < 7; col++) {
             LocalDate day = currentWeekStart.plusDays(col);
@@ -541,12 +536,11 @@ public class SchedulePanel extends JPanel {
 
             JPanel cellPanel = new JPanel();
             cellPanel.setLayout(new BoxLayout(cellPanel, BoxLayout.Y_AXIS));
-            // Tambahkan border divider di kanan dan bawah setiap kolom
             cellPanel.setBorder(BorderFactory.createMatteBorder(
-                0, // top
-                col == 0 ? 1 : 0, // left border only for first column
-                1, // bottom
-                1, // right
+                0,
+                col == 0 ? 1 : 0,
+                1,
+                1,
                 new Color(189, 195, 199)
             ));
             cellPanel.setPreferredSize(new Dimension(160, Math.max(CELL_HEIGHT, schedules.size() * CELL_HEIGHT)));
@@ -606,7 +600,6 @@ public class SchedulePanel extends JPanel {
         notesLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
         notesLabel.setForeground(new Color(80, 80, 80));
 
-        // Update status label berdasarkan jenis jadwal
         JLabel statusLabel;
         if ("Once".equalsIgnoreCase(schedule.getRecurrence())) {
             statusLabel = new JLabel(instanceFinished ? "Selesai" : "Belum");
@@ -657,7 +650,6 @@ public class SchedulePanel extends JPanel {
         return panel;
     }
 
-    // Helper method to get color based on recurrence type
     private Color getScheduleColor(String recurrence) {
         if (recurrence == null)
             return ONCE_COLOR;
@@ -680,11 +672,9 @@ public class SchedulePanel extends JPanel {
             String recurrence = schedule.getRecurrence();
             
             if ("Once".equalsIgnoreCase(recurrence)) {
-                // For once schedules, set is_active to false
                 schedule.setActive(false);
                 scheduleDAO.updateSchedule(schedule);
             } else {
-                // For recurring schedules, add to schedule_instances
                 new ScheduleInstanceDAO().addInstance(
                     schedule.getId(),
                     java.sql.Date.valueOf(instanceDate),
@@ -695,8 +685,7 @@ public class SchedulePanel extends JPanel {
             
             JOptionPane.showMessageDialog(this, "Jadwal berhasil ditandai sebagai selesai!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
             mainMenu.refreshData();
-            
-            // Refresh PetManagerPanel juga
+
             mainMenu.refreshPetManagerPanel();
         } catch (SQLException ex) {
             ex.printStackTrace();

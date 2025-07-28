@@ -1,4 +1,4 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.panel;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -22,6 +22,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 
+import com.narangga.swingapp.form.LoginForm;
 import com.narangga.swingapp.model.User;
 import com.narangga.swingapp.settings.UserSettings;
 
@@ -44,25 +45,22 @@ public class MainMenu extends JFrame {
     private final User currentUser;
     private JButton homeButton; // Store reference to home button
 
+
     public MainMenu(User user) {
         this.currentUser = user;
 
-        // Initialize frame properties before UI components
-        setTitle("Manajemen PetCare");
+        setTitle("Pet Care Manager");
         setSize(1200, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
         getContentPane().setBackground(BACKGROUND_COLOR);
 
-        // Ensure cardLayout is initialized first
         cardLayout = new CardLayout();
 
-        // Initialize the UI components
         add(createSideBar(), BorderLayout.WEST);
         add(createMainContentPanel(), BorderLayout.CENTER);
 
-        // Update user information after UI is created
         updateUserInfo();
 
         // Add window listener to handle cleanup
@@ -76,7 +74,7 @@ public class MainMenu extends JFrame {
         // This ensures the frame is fully initialized before becoming visible
         pack();
         setLocationRelativeTo(null); // Center on screen
-        
+
         // Click the home button after the UI is fully initialized
         SwingUtilities.invokeLater(() -> {
             if (homeButton != null) {
@@ -85,79 +83,78 @@ public class MainMenu extends JFrame {
         });
     }
 
-   private JPanel createSideBar() {
-    // Panel utama sidebar
-    JPanel sideBar = new JPanel();
-    sideBar.setLayout(new BorderLayout());
-    sideBar.setBackground(new Color(248, 249, 250));
-    sideBar.setPreferredSize(new Dimension(220, 0));
-    sideBar.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15));
+    private JPanel createSideBar() {
+        // Panel utama sidebar
+        JPanel sideBar = new JPanel();
+        sideBar.setLayout(new BorderLayout());
+        sideBar.setBackground(new Color(248, 249, 250));
+        sideBar.setPreferredSize(new Dimension(220, 0));
+        sideBar.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15));
 
-    // --- TOP: Logo dan Judul ---
-    JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 10));
-    topPanel.setOpaque(false);
+        // --- TOP: Logo dan Judul ---
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 10));
+        topPanel.setOpaque(false);
 
-    // Load logo from resources
-    ImageIcon logo = new ImageIcon(getClass().getResource("/icons/logo.png"));
-    if (logo.getImage() != null) {
-        // Scale logo to smaller size
-        Image scaled = logo.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-        logo = new ImageIcon(scaled);
+        // Load logo from resources
+        ImageIcon logo = new ImageIcon(getClass().getResource("/icons/logo.png"));
+        if (logo.getImage() != null) {
+            // Scale logo to smaller size
+            Image scaled = logo.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+            logo = new ImageIcon(scaled);
+        }
+        JLabel logoLabel = new JLabel(logo);
+
+        JLabel titleLabel = new JLabel("Pet Care Manager");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        titleLabel.setForeground(new Color(33, 37, 41));
+
+        topPanel.add(logoLabel);
+        topPanel.add(titleLabel);
+
+        // Add spacing after logo+title
+        topPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        // --- MIDDLE: Menu utama ---
+        JPanel menuPanel = new JPanel();
+        menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
+        menuPanel.setOpaque(false);
+
+        JLabel greetingLabel = new JLabel(getGreeting());
+        greetingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        greetingLabel.setForeground(new Color(100, 100, 100));
+        greetingLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        menuPanel.add(greetingLabel);
+
+        userNameLabel = new JLabel("User");
+        userNameLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        userNameLabel.setForeground(new Color(50, 50, 50));
+        userNameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        menuPanel.add(userNameLabel);
+
+        menuPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        homeButton = addMenuButton(menuPanel, " Beranda", "HOME", "icons/3d-house.png");
+        addMenuButton(menuPanel, " Peliharaan", "PETS", "icons/paw.png");
+        addMenuButton(menuPanel, " Jadwal", "SCHEDULE", "icons/3d-calendar.png");
+
+        // Tambah "space" agar Settings & Logout berada di bawah
+        menuPanel.add(Box.createVerticalGlue());
+
+        // --- BOTTOM: Settings dan Logout ---
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
+        bottomPanel.setOpaque(false);
+
+        addMenuButton(bottomPanel, "Settings", "SETTINGS", null);
+        addMenuButton(bottomPanel, "Logout", "LOGOUT", null);
+
+        // Tambahkan semua ke panel utama
+        sideBar.add(topPanel, BorderLayout.NORTH);
+        sideBar.add(menuPanel, BorderLayout.CENTER);
+        sideBar.add(bottomPanel, BorderLayout.SOUTH);
+
+        return sideBar;
     }
-    JLabel logoLabel = new JLabel(logo);
-    
-    JLabel titleLabel = new JLabel("PetCare");
-    titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-    titleLabel.setForeground(new Color(33, 37, 41));
-
-    topPanel.add(logoLabel);
-    topPanel.add(titleLabel);
-
-    // Add spacing after logo+title
-    topPanel.add(Box.createRigidArea(new Dimension(0, 20)));
-
-    // --- MIDDLE: Menu utama ---
-    JPanel menuPanel = new JPanel();
-    menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
-    menuPanel.setOpaque(false);
-
-    JLabel greetingLabel = new JLabel(getGreeting());
-    greetingLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-    greetingLabel.setForeground(new Color(100, 100, 100));
-    greetingLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-    menuPanel.add(greetingLabel);
-
-    userNameLabel = new JLabel("User");
-    userNameLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
-    userNameLabel.setForeground(new Color(50, 50, 50));
-    userNameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-    menuPanel.add(userNameLabel);
-
-    menuPanel.add(Box.createRigidArea(new Dimension(0, 20)));
-
-    homeButton = addMenuButton(menuPanel, " Beranda", "HOME", "icons/3d-house.png");
-    addMenuButton(menuPanel, " Peliharaan", "PETS", "icons/paw.png");
-    addMenuButton(menuPanel, " Jadwal", "SCHEDULE", "icons/3d-calendar.png");
-
-    // Tambah "space" agar Settings & Logout berada di bawah
-    menuPanel.add(Box.createVerticalGlue());
-
-    // --- BOTTOM: Settings dan Logout ---
-    JPanel bottomPanel = new JPanel();
-    bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
-    bottomPanel.setOpaque(false);
-
-    addMenuButton(bottomPanel, "Settings", "SETTINGS", null);
-    addMenuButton(bottomPanel, "Logout", "LOGOUT", null);
-
-    // Tambahkan semua ke panel utama
-    sideBar.add(topPanel, BorderLayout.NORTH);
-    sideBar.add(menuPanel, BorderLayout.CENTER);
-    sideBar.add(bottomPanel, BorderLayout.SOUTH);
-
-    return sideBar;
-}
-
 
     private JPanel createMainContentPanel() {
         mainContentPanel = new JPanel(cardLayout); // Gunakan cardLayout yang sudah diinisialisasi
@@ -226,7 +223,7 @@ public class MainMenu extends JFrame {
                 handleLogout();
                 return;
             }
-            
+
             // Check if mainContentPanel has a parent before calling cardLayout.show()
             if (mainContentPanel.getParent() != null) {
                 for (Component comp : panel.getComponents()) {
@@ -286,10 +283,7 @@ public class MainMenu extends JFrame {
     }
 
     private void handleLogout() {
-        int confirm = JOptionPane.showConfirmDialog(
-                this,
-                "Are you sure you want to logout?",
-                "Confirm Logout",
+        int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to logout?", "Confirm Logout",
                 JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             UserSettings.clearSettings();

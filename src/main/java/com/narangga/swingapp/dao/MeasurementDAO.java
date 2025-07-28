@@ -1,4 +1,7 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.dao;
+
+import com.narangga.swingapp.util.DatabaseConnection;
+import com.narangga.swingapp.model.PetMeasurement;
 
 import java.sql.*;
 import java.util.ArrayList;

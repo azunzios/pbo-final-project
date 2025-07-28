@@ -1,4 +1,4 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.model;
 
 import java.util.Date;
 
@@ -13,18 +13,15 @@ public class Pet {
     private String gender;
     private String imagePath;
 
-    // Default constructor
     public Pet() {
     }
 
-    // Constructor with basic fields
     public Pet(String name, String type, Date birthDate) {
         this.name = name;
         this.type = type;
         this.birthDate = birthDate != null ? new Date(birthDate.getTime()) : null;
     }
 
-    // Full constructor
     public Pet(int id, String name, String type, Date birthDate, double weight, String gender, String notes) {
         this.id = id;
         this.name = name;
@@ -116,22 +113,6 @@ public class Pet {
         Date now = new Date();
         long diffInMillies = Math.abs(now.getTime() - birthDate.getTime());
         return (int) (diffInMillies / (1000L * 60 * 60 * 24 * 365));
-    }
-
-    public void updateWeight(double weight) {
-        if (weight >= 0) {
-            this.weight = weight;
-        }
-    }
-
-    public void addNotes(String note) {
-        if (note != null && !note.trim().isEmpty()) {
-            if (this.notes == null || this.notes.trim().isEmpty()) {
-                this.notes = note.trim();
-            } else {
-                this.notes += "\n" + note.trim();
-            }
-        }
     }
 
     @Override

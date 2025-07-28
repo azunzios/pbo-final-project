@@ -1,7 +1,8 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.dao;
+
+import com.narangga.swingapp.util.DatabaseConnection;
 
 import java.sql.*;
-import java.util.*;
 
 public class ScheduleInstanceDAO {
     public void addInstance(int scheduleId, java.sql.Date date, boolean isDone, String notes) throws SQLException {

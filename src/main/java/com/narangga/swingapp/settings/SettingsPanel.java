@@ -17,8 +17,6 @@ import javax.swing.SpinnerNumberModel;
 
 public class SettingsPanel extends JPanel {
     private final JCheckBox requireNotesCheckbox;
-    private final JCheckBox enableNotificationsCheckbox;
-    private final JSpinner reminderTimeSpinner;
 
     public SettingsPanel() {
         setLayout(new GridBagLayout());
@@ -41,16 +39,6 @@ public class SettingsPanel extends JPanel {
         notifLabel.setFont(notifLabel.getFont().deriveFont(Font.BOLD, 14f));
         add(notifLabel, gbc);
 
-        enableNotificationsCheckbox = new JCheckBox("Aktifkan notifikasi");
-        add(enableNotificationsCheckbox, gbc);
-
-        JPanel reminderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        reminderPanel.add(new JLabel("Ingatkan sebelum:"));
-        reminderTimeSpinner = new JSpinner(new SpinnerNumberModel(15, 1, 120, 1));
-        reminderPanel.add(reminderTimeSpinner);
-        reminderPanel.add(new JLabel("menit"));
-        add(reminderPanel, gbc);
-
         // Tombol simpan
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.insets = new Insets(20, 5, 5, 5);
@@ -64,15 +52,11 @@ public class SettingsPanel extends JPanel {
     private void loadSettings() {
         UserSettings settings = UserSettings.getCurrentSettings();
         requireNotesCheckbox.setSelected(settings.isRequireNotes());
-        enableNotificationsCheckbox.setSelected(settings.isEnableNotifications());
-        reminderTimeSpinner.setValue(settings.getReminderMinutes());
     }
 
     private void saveSettings() {
         UserSettings settings = UserSettings.getCurrentSettings();
         settings.setRequireNotes(requireNotesCheckbox.isSelected());
-        settings.setEnableNotifications(enableNotificationsCheckbox.isSelected());
-        settings.setReminderMinutes((Integer) reminderTimeSpinner.getValue());
         settings.save();
 
         JOptionPane.showMessageDialog(this,

@@ -1,4 +1,4 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.dao;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -9,6 +9,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.narangga.swingapp.util.DatabaseConnection;
+import com.narangga.swingapp.model.Schedule;
 import com.narangga.swingapp.settings.UserSettings;
 
 
@@ -19,6 +21,7 @@ public class ScheduleDAO {
      * @param schedule Objek Schedule yang akan ditambahkan
      * @throws SQLException jika terjadi kesalahan saat akses database
      */
+
     public void addSchedule(Schedule schedule) throws SQLException {
         String sql = "INSERT INTO schedules (pet_id, care_type, schedule_time, days, recurrence, category, notes, is_active, user_id) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -166,8 +169,7 @@ public class ScheduleDAO {
     }
 
     /**
-     * Helper method untuk mengekstrak objek Schedule dari ResultSet
-     * untuk menghindari duplikasi kode.
+     * Helper method untuk mengekstrak objek Schedule dari ResultSet untuk menghindari duplikasi kode.
      * @param rs ResultSet yang berisi data schedule
      * @return Objek Schedule yang sudah diisi data
      * @throws SQLException jika terjadi kesalahan saat membaca ResultSet

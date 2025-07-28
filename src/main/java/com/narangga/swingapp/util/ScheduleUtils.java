@@ -1,6 +1,6 @@
 package com.narangga.swingapp.util;
 
-import com.narangga.swingapp.Schedule;
+import com.narangga.swingapp.model.Schedule;
 
 import java.time.Duration;
 import java.time.LocalDateTime;

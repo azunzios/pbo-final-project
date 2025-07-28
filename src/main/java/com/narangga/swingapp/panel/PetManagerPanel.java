@@ -1,4 +1,4 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.panel;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -45,6 +45,15 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
+import com.narangga.swingapp.dao.MeasurementDAO;
+import com.narangga.swingapp.dao.PetDAO;
+import com.narangga.swingapp.dao.ScheduleDAO;
+import com.narangga.swingapp.form.AddPetForm;
+import com.narangga.swingapp.model.Pet;
+import com.narangga.swingapp.model.PetMeasurement;
+import com.narangga.swingapp.model.Schedule;
+import com.narangga.swingapp.model.ScheduleInstance;
+import com.narangga.swingapp.util.DatabaseConnection;
 import com.toedter.calendar.JDateChooser;
 
 public class PetManagerPanel extends JPanel {
@@ -54,11 +63,10 @@ public class PetManagerPanel extends JPanel {
     private JTable historyTable;
     private DefaultTableModel historyTableModel;
     private PetDAO petDAO;
-    private ScheduleDAO scheduleDAO; // Tambahkan ini
+    private ScheduleDAO scheduleDAO;
     private JLabel petImageLabel;
     private JButton deletePetButton;
     private MainMenu mainMenu;
-    private JPanel weightHistoryPanel;
     private JTable measurementTable;
     private DefaultTableModel measurementTableModel;
 
@@ -75,7 +83,7 @@ public class PetManagerPanel extends JPanel {
         setBorder(new EmptyBorder(10, 10, 10, 10));
         setBackground(UIManager.getColor("Panel.background"));
 
-        // Tambahkan label tanggal dan waktu sekarang di atas splitPane
+        // label tanggal dan waktu di atas panel
         JLabel dateTimeLabel = new JLabel(getCurrentDateTimeString());
         dateTimeLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         dateTimeLabel.setBorder(new EmptyBorder(0, 0, 10, 0));
@@ -173,7 +181,7 @@ public class PetManagerPanel extends JPanel {
                 double length = Double.parseDouble(lengthField.getText());
                 String notes = notesArea.getText();
 
-                // Create measurement record
+                // membuat object petmeasurement
                 PetMeasurement measurement = new PetMeasurement();
                 measurement.setPetId(selectedPet.getId());
                 measurement.setRecordedAt(new Timestamp(dateChooser.getDate().getTime()));
@@ -181,10 +189,10 @@ public class PetManagerPanel extends JPanel {
                 measurement.setLength(length);
                 measurement.setNotes(notes);
 
-                // Save to database
+                // simpan measurement ke database
                 MeasurementDAO measurementDAO = new MeasurementDAO();
                 if (measurementDAO.addMeasurement(measurement)) {
-                    // Update current pet values
+                    // langsung update pet dengan measurement baru
                     selectedPet.setWeight(weight);
                     selectedPet.setLength(length);
                     petDAO.updatePet(selectedPet);
@@ -223,11 +231,11 @@ public class PetManagerPanel extends JPanel {
         deletePetButton = new JButton("Hapus Peliharaan");
         deletePetButton.setEnabled(false);
 
-        // Initially disable edit and measurements buttons
+        // sebelum tombol delete/ edit bisa digunakan, harus ada pet yang dipilih, sehingga disable dulu
         editPetButton.setEnabled(false);
         deletePetButton.setEnabled(false);
         measurementsButton.setEnabled(false);
-        exportButton.setEnabled(false); // Disable awalnya
+        exportButton.setEnabled(false);
 
         Dimension buttonSize = new Dimension(100, 30);
         addPetButton.setPreferredSize(buttonSize);
@@ -242,7 +250,7 @@ public class PetManagerPanel extends JPanel {
         exportButton.addActionListener(e -> exportPetData()); // Action baru
         deletePetButton.addActionListener(e -> deleteSelectedPet());
 
-        // Add selection listener to enable/disable buttons
+        // enable/disable tombol berdasarkan seleksi di petList
         petList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 boolean hasSelection = petList.getSelectedValue() != null;
@@ -256,7 +264,7 @@ public class PetManagerPanel extends JPanel {
         buttonPanel.add(addPetButton);
         buttonPanel.add(editPetButton);
         buttonPanel.add(measurementsButton);
-        buttonPanel.add(exportButton); // Tambahkan tombol ekspor
+        buttonPanel.add(exportButton);
         buttonPanel.add(deletePetButton);
 
         return buttonPanel;
@@ -332,7 +340,7 @@ public class PetManagerPanel extends JPanel {
         measurementTable.setGridColor(new Color(189, 195, 199));
         measurementTable.setBorder(BorderFactory.createLineBorder(new Color(189, 195, 199), 1));
 
-        // Set custom renderer for date column
+        //renderer untuk tanggal
         measurementTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
@@ -393,7 +401,7 @@ public class PetManagerPanel extends JPanel {
             petImageLabel.setIcon(null);
         }
 
-        // Tampilkan semua jadwal milik pet ini di care history
+        // semua jadwal milik pet (X) di care history
         try {
             refreshScheduleHistory(pet.getId());
         } catch (SQLException ex) {
@@ -401,7 +409,7 @@ public class PetManagerPanel extends JPanel {
         }
     }
 
-    // Tambahkan method ini untuk menampilkan semua schedule milik pet di care history
+    // menampilkan seluruh jadwal yang dimiliki suatu pet
     private void refreshScheduleHistory(int petId) throws SQLException {
         List<Schedule> schedules = scheduleDAO.getSchedulesByPetId(petId);
         historyTableModel.setRowCount(0); // Clear existing data
@@ -475,7 +483,7 @@ public class PetManagerPanel extends JPanel {
     private void showAddPetDialog() {
         AddPetForm form = new AddPetForm(this, mainMenu);
         showFormDialog("Add New Pet", form);
-        // Tambahkan ini agar HomePanel refresh setelah dialog ditutup
+
         if (mainMenu != null) mainMenu.refreshData();
     }
 

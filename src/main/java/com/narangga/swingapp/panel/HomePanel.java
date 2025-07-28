@@ -1,4 +1,10 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.panel;
+
+import com.narangga.swingapp.dao.PetDAO;
+import com.narangga.swingapp.dao.ScheduleDAO;
+import com.narangga.swingapp.dao.ScheduleInstanceDAO;
+import com.narangga.swingapp.model.Pet;
+import com.narangga.swingapp.model.Schedule;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -25,7 +31,6 @@ import javax.swing.JScrollPane;
 
 public class HomePanel extends JPanel {
 
-    private static final Color BACKGROUND_COLOR = new Color(255, 248, 234); // #FFF8EA
     private PetDAO petDAO;
     private ScheduleDAO scheduleDAO;
     private JPanel upcomingPanel;
@@ -33,7 +38,6 @@ public class HomePanel extends JPanel {
     private StatCardPanel totalPetsCard;
     private StatCardPanel scheduleCountsCard;
 
-    // Tambahkan referensi ke SchedulePanel
     private SchedulePanel schedulePanel;
 
     public HomePanel() {
@@ -41,14 +45,12 @@ public class HomePanel extends JPanel {
         this.scheduleDAO = new ScheduleDAO();
 
         setLayout(new BorderLayout(20, 20));
-        setBackground(new Color(249, 250, 252)); // Latar belakang lebih netral dan modern
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // Padding sisi lebih lebar agar tidak sempit
+        setBackground(new Color(249, 250, 252));
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Panel utama bagian tengah yang menampung statsPanel dan scrollPane
         JPanel centerWrapperPanel = new JPanel(new BorderLayout(10, 10));
         centerWrapperPanel.setOpaque(false);
 
-        // --- Panel Tanggal dan Waktu Sekarang ---
         JPanel dateTimePanel = new JPanel();
         dateTimePanel.setOpaque(false);
         dateTimePanel.setLayout(new BoxLayout(dateTimePanel, BoxLayout.Y_AXIS));
@@ -57,14 +59,11 @@ public class HomePanel extends JPanel {
         dateTimeLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         dateTimePanel.add(dateTimeLabel);
 
-        // Tambahkan ke bagian atas frame
         add(dateTimePanel, BorderLayout.NORTH);
 
-        // --- Top Panel for Stats (Desain Kartu Diperbarui) ---
         statsPanel = new JPanel(new GridLayout(1, 2, 20, 10));
         statsPanel.setOpaque(false);
 
-        // Ambil data (Tidak diubah)
         int totalPets = petDAO.getAllPets().size();
         int dailySchedules = 0;
         try {
@@ -83,8 +82,6 @@ public class HomePanel extends JPanel {
             e.printStackTrace();
         }
 
-        // Kartu Statistik dengan warna baru dan placeholder ikon
-        // (Asumsi StatCardPanel bisa menerima ImageIcon)
         totalPetsCard = new StatCardPanel("Jumlah Peliharaan", String.valueOf(totalPets),
                 new Color(224, 242, 254), new ImageIcon("icons/paw.png"));
         scheduleCountsCard = new StatCardPanel("Banyak Jadwal Hari ini", String.valueOf(dailySchedules),
@@ -92,10 +89,8 @@ public class HomePanel extends JPanel {
         statsPanel.add(totalPetsCard);
         statsPanel.add(scheduleCountsCard);
 
-        // Tambahkan statsPanel ke panel wrapper center
         centerWrapperPanel.add(statsPanel, BorderLayout.NORTH);
 
-        // --- Center Panel for Upcoming Schedule (Desain Diperbarui) ---
         upcomingPanel = new JPanel();
         upcomingPanel.setLayout(new BoxLayout(upcomingPanel, BoxLayout.Y_AXIS));
         upcomingPanel.setOpaque(false);
@@ -104,15 +99,15 @@ public class HomePanel extends JPanel {
         loadUpcomingSchedules();
 
         JScrollPane scrollPane = new JScrollPane(upcomingPanel);
-        // scrollPane.setBorder(null);
+
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        // Tambahkan scrollPane ke center wrapper
+
         centerWrapperPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Tambahkan centerWrapperPanel ke layout utama
+
         add(centerWrapperPanel, BorderLayout.CENTER);
 
     }
@@ -128,7 +123,6 @@ public class HomePanel extends JPanel {
         int totalPets = petDAO.getAllPets().size();
         int dailySchedules = 0;
         try {
-            // Hanya hitung jadwal yang tanggalnya hari ini (baik aktif maupun selesai)
             java.time.LocalDate todayDate = java.time.LocalDate.now();
             List<Schedule> allSchedules = scheduleDAO.getAllSchedules();
             dailySchedules = 0;
@@ -166,7 +160,7 @@ public class HomePanel extends JPanel {
     private JPanel createScheduleCard(Schedule schedule, String petName, boolean showCompleteButton) {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBackground(Color.WHITE); // Ubah ke putih
+        card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(getScheduleColor(schedule.getRecurrence()), 4), // Border tebal dengan warna
                 BorderFactory.createEmptyBorder(12, 18, 12, 18)));
@@ -186,7 +180,6 @@ public class HomePanel extends JPanel {
                 String.format("Waktu: %02d:%02d", scheduleTime.getHour(), scheduleTime.getMinute()));
         timeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
-        // Tambahkan remaining time label
         JLabel remainingTimeLabel = createRemainingTimeLabel(scheduleTime);
 
         card.add(petLabel);
@@ -232,7 +225,7 @@ public class HomePanel extends JPanel {
                 }
             }
 
-            // Sort by urgency - negatif (terlewat) akan ditampilkan terlebih dahulu
+            // Sort by urgency - negatif. yang terlewat lebih dulu
             todayActiveSchedules.sort((s1, s2) -> {
                 java.time.LocalDateTime time1 = java.time.LocalDateTime.ofInstant(s1.getScheduleTime().toInstant(), java.time.ZoneId.systemDefault());
                 java.time.LocalDateTime time2 = java.time.LocalDateTime.ofInstant(s2.getScheduleTime().toInstant(), java.time.ZoneId.systemDefault());
@@ -242,17 +235,16 @@ public class HomePanel extends JPanel {
                 
                 long diff1 = java.time.Duration.between(now, today1).toMinutes();
                 long diff2 = java.time.Duration.between(now, today2).toMinutes();
-                
-                // Urutkan berdasarkan diff - yang paling negatif (terlewat) dulu
+
                 return Long.compare(diff1, diff2);
             });
 
-            // Ambil maksimal 2 jadwal terdekat/terlewat
+            // maksimal 2 jadwal aja
             List<Schedule> displaySchedules = todayActiveSchedules.size() > 2 
                 ? todayActiveSchedules.subList(0, 2) 
                 : todayActiveSchedules;
 
-            // Section: Jadwal Hari Ini Tersisa (status == 0)
+            // ngebuat Section untuk Jadwal Hari Ini Tersisa (status == 0)
             JLabel sisaLabel = new JLabel("Jadwal Hari Ini Tersisa");
             sisaLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
             sisaLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -287,7 +279,7 @@ public class HomePanel extends JPanel {
 
             upcomingPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-            // Section: Jadwal Hari Ini Terselesaikan (status == 1)
+            // Jadwal hari ini klo terselesaikan (status == 1)
             JLabel selesaiLabel = new JLabel("Jadwal Hari Ini Terselesaikan");
             selesaiLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
             selesaiLabel.setAlignmentX(Component.LEFT_ALIGNMENT);

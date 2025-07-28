@@ -1,4 +1,4 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.form;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -28,6 +28,11 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 
 import com.narangga.swingapp.dao.PetDAO;
+import com.narangga.swingapp.dao.ScheduleDAO;
+import com.narangga.swingapp.model.Pet;
+import com.narangga.swingapp.model.Schedule;
+import com.narangga.swingapp.panel.MainMenu;
+import com.narangga.swingapp.panel.SchedulePanel;
 import com.toedter.calendar.JDateChooser;
 
 public class AddScheduleForm extends JDialog {

@@ -1,4 +1,4 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.form;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -26,6 +26,10 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import com.narangga.swingapp.panel.MainMenu;
+import com.narangga.swingapp.model.Pet;
+import com.narangga.swingapp.dao.PetDAO;
+import com.narangga.swingapp.panel.PetManagerPanel;
 import com.toedter.calendar.JDateChooser;
 
 public class AddPetForm extends JPanel {

@@ -7,11 +7,8 @@ import java.util.Map;
 
 import javax.swing.table.AbstractTableModel;
 
-import com.narangga.swingapp.Pet;
-import com.narangga.swingapp.Schedule;
-
 public class ScheduleTableModel extends AbstractTableModel {
-    // Tambahkan kolom "Catatan"
+
     private final String[] columnNames = {"Peliharaan", "Jenis", "Waktu", "Pengulangan", "Status", "Catatan"};
     private List<Schedule> schedules;
     private Map<Integer, Pet> petMap;

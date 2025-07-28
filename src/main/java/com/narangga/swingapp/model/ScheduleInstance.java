@@ -1,4 +1,4 @@
-package com.narangga.swingapp;
+package com.narangga.swingapp.model;
 
 public class ScheduleInstance {
     private int id;
@@ -22,28 +22,12 @@ public class ScheduleInstance {
         this.id = id;
     }
 
-    public int getScheduleId() {
-        return scheduleId;
-    }
-
-    public void setScheduleId(int scheduleId) {
-        this.scheduleId = scheduleId;
-    }
-
     public java.sql.Date getDate() {
         return date;
     }
 
     public void setDate(java.sql.Date date) {
         this.date = date;
-    }
-
-    public boolean isDone() {
-        return isDone;
-    }
-
-    public void setDone(boolean isDone) {
-        this.isDone = isDone;
     }
 
     public String getNotes() {
